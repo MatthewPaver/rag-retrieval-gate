@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+      - name: Unit tests
+        run: python -m pytest -q
+      - name: Retrieval gate (offline fixture)
+        run: >
+          rag-gate gate --dataset fixtures/policies.json --k 3
+          --baseline configs/baseline.json
+          --candidate configs/candidate-bm25-b05.json
+          --max-drop 0.02 --output reports/gate.json
+      - name: Gate self-test (known regression must fail)
+        run: |
+          set +e
+          rag-gate gate --dataset fixtures/policies.json --k 3 \
+            --baseline configs/baseline.json \
+            --candidate configs/candidate-chunk-12.json --max-drop 0.02
+          status=$?
+          set -e
+          if [ "$status" -ne 1 ]; then
+            echo "expected exit 1 from a known regression, got $status"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-report-py${{ matrix.python-version }}
+          path: reports/gate.json
+          if-no-files-found: ignore
