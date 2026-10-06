@@ -1,0 +1,115 @@
+{
+  "corpus": [
+    {
+      "id": "leave-current",
+      "text": "The current people policy grants eligible employees 16 weeks of paid parental leave from the child's arrival date."
+    },
+    {
+      "id": "keys-current",
+      "text": "Production API credentials must be rotated every 90 days and immediately after a suspected exposure."
+    },
+    {
+      "id": "retention-current",
+      "text": "The approved retention standard deletes raw customer event records after 30 days."
+    },
+    {
+      "id": "retention-superseded",
+      "text": "A superseded 2022 proposal suggested retaining raw customer event records for 365 days; it was never approved."
+    },
+    {
+      "id": "expenses",
+      "text": "Expense claims must be submitted by the fifth working day of the next month."
+    },
+    {
+      "id": "refund-current",
+      "text": "The approved customer policy accepts refund requests within 30 calendar days of delivery."
+    },
+    {
+      "id": "refund-superseded",
+      "text": "A superseded customer refund pilot allowed a customer to request a refund within 60 calendar days after delivery, but that pilot ended and is not current policy."
+    },
+    {
+      "id": "refund-hard-negative",
+      "text": "The refund status notification service usually sends an email within 30 minutes."
+    },
+    {
+      "id": "leave-hard-negative",
+      "text": "Annual leave requests should normally be submitted 16 days before travel."
+    },
+    {
+      "id": "incident-handbook",
+      "text": "Incident handbook. Every alert is triaged by the on-call engineer, who records a severity in the incident channel. Severity-one incidents affect all customers or risk data loss and must be escalated to the incident commander within 15 minutes. Severity-two incidents affect a subset of customers and are reviewed the next working day. Post-incident reviews are blameless and are published within five working days."
+    },
+    {
+      "id": "oncall-rota",
+      "text": "The on-call rota changes every Monday at 10:00 and each engineer covers at most one week in four."
+    }
+  ],
+  "cases": [
+    {
+      "id": "parental-leave",
+      "query": "How much paid parental leave is available?",
+      "relevant_ids": [
+        "leave-current"
+      ],
+      "hard_negative_ids": [
+        "leave-hard-negative"
+      ],
+      "answer": "Eligible employees receive 16 weeks of paid parental leave from the child's arrival [leave-current]."
+    },
+    {
+      "id": "api-key-rotation",
+      "query": "How often should production API credentials be rotated?",
+      "relevant_ids": [
+        "keys-current"
+      ],
+      "answer": "Production API credentials are rotated every 90 days and immediately after a suspected exposure [keys-current]."
+    },
+    {
+      "id": "conflicting-retention-evidence",
+      "query": "How long should raw customer event records be retained?",
+      "relevant_ids": [
+        "retention-current"
+      ],
+      "required_context_ids": [
+        "retention-current",
+        "retention-superseded"
+      ],
+      "answer": "Raw customer event records are deleted after 30 days [retention-current]. A 2022 proposal to keep them for 365 days was never approved [retention-superseded]."
+    },
+    {
+      "id": "refund-window-with-conflict",
+      "query": "How many days after delivery can a customer request a refund?",
+      "relevant_ids": [
+        "refund-current"
+      ],
+      "required_context_ids": [
+        "refund-current",
+        "refund-superseded"
+      ],
+      "hard_negative_ids": [
+        "refund-hard-negative"
+      ],
+      "answer": "Customers can request a refund within 30 calendar days of delivery [refund-current]. The earlier 60-day pilot has ended and is not current policy [refund-superseded]."
+    },
+    {
+      "id": "expense-deadline",
+      "query": "When are expense claims due?",
+      "relevant_ids": [
+        "expenses"
+      ],
+      "answer": "Expense claims must be submitted by the fifth working day of the following month [expenses]."
+    },
+    {
+      "id": "sev1-escalation",
+      "query": "How quickly must a severity-one incident be escalated?",
+      "relevant_ids": [
+        "incident-handbook"
+      ],
+      "hard_negative_ids": [
+        "oncall-rota"
+      ],
+      "answer": "A severity-one incident must be escalated to the incident commander within 15 minutes [incident-handbook]."
+    }
+  ]
+}
