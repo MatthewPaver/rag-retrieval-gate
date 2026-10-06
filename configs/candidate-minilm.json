@@ -1,0 +1,1 @@
+{"name": "candidate-minilm-l6", "retriever": "dense", "model": "sentence-transformers/all-MiniLM-L6-v2"}

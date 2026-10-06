@@ -1,0 +1,1 @@
+{"name": "candidate-bm25-b05", "retriever": "bm25", "bm25_b": 0.5}
