@@ -167,7 +167,7 @@ This repository's own workflow ([`.github/workflows/ci.yml`](.github/workflows/c
 ```yaml
 - name: Retrieval regression gate
   run: |
-    pip install "rag-retrieval-gate @ git+https://github.com/MatthewPaver/rag-retrieval-gate@v0.1.0"
+    pip install "rag-retrieval-gate @ git+https://github.com/MatthewPaver/rag-retrieval-gate@v0.1.1"
     rag-gate gate \
       --dataset eval/questions.json --k 5 \
       --baseline eval/retrieval-main.json \
