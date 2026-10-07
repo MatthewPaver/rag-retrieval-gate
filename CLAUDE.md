@@ -25,9 +25,11 @@ See README.md for usage.
 - No tuning on test queries. RRF k=60, fusion/rerank depth 100 are fixed literature defaults. Any new
   tunable must be chosen a priori or on a non-test split, and the README must say which.
 - Models run on CPU by default (`--device cpu`) so latency numbers are comparable.
+- Releases are tagged (`v0.1.0`); the README CI snippet pins `git+...@<tag>`. Bump both together.
 - Never commit BEIR data. Fetcher checksums are pinned; update them only after verifying the source.
 
 ## Commands
 - `pip install -e ".[dev]"` then `python -m pytest -q`
+- Lint/types (CI runs these, pinned ruff 0.16.10 / mypy 2.1.0): `ruff check . && ruff format --check . && mypy`
 - `rag-gate gate --dataset fixtures/policies.json --k 3 --baseline configs/baseline.json --candidate configs/<c>.json`
 - `rag-gate gate --dataset data/beir/scifact --k 10 ...` after `python scripts/fetch_beir.py --acknowledge-licence`

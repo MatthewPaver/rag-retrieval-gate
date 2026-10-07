@@ -1,9 +1,9 @@
-# rag-retrieval-gate
+# rag-retrieval-gate: block retrieval regressions in CI
 
 [![CI](https://github.com/MatthewPaver/rag-retrieval-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/MatthewPaver/rag-retrieval-gate/actions/workflows/ci.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
 
-A regression gate for the retrieval half of a RAG system. Point it at a set of labelled questions, a baseline retrieval configuration and a candidate one. It scores both, prints the difference with a confidence interval and exits non-zero if the candidate is worse than the baseline by more than a threshold you set, and by more than noise in the question set explains. That makes it a CI step.
+A regression gate for the retrieval half of a RAG system: it scores a baseline and a candidate retrieval configuration on the same labelled questions and exits non-zero when the candidate is significantly worse.
 
 ## Result: it blocks the bad change and lets the good ones through
 
@@ -36,6 +36,8 @@ What the table says:
 
 No parameter was tuned on the test queries. RRF uses k=60 from Cormack, Clarke and Büttcher (2009) and fuses each retriever's top 100; the re-ranker re-scores BM25's top 100, as in the BEIR paper. All of these are config defaults fixed before the first SciFact run.
 
+To try it on the committed fixture (Python 3.11+): `pip install -e .`, then `rag-gate gate --dataset fixtures/policies.json --k 3 --baseline configs/baseline.json --candidate configs/candidate-chunk-12.json`. The full [Quickstart](#quickstart) is below.
+
 ## The problem
 
 Teams change the retrieval layer of a RAG system all the time: a new embedding model, a different chunk size, a hybrid retriever, a re-ranker. Each change is usually judged by eye on a handful of queries. The failure that matters is quiet: the right passage drops from rank 2 to rank 12, falls out of the context window, and the generator either answers from something else or cites a source it was never shown.
@@ -51,11 +53,13 @@ This tool asks two questions of every change, on the same labelled questions, be
 flowchart LR
     D[(Labelled questions<br/>JSON fixture or BEIR dir)] --> R1
     D --> R2
-    B[baseline config] --> R1[Retrieve top k<br/>BM25 or dense, optional chunking]
+    B[baseline config] --> R1[Retrieve top k<br/>BM25 / dense / hybrid RRF,<br/>optional cross-encoder re-rank,<br/>optional chunking]
     C[candidate config] --> R2[Retrieve top k]
     R1 --> S1[Score per question<br/>hit, RR, recall, nDCG,<br/>context, hard negatives, citations]
     R2 --> S2[Score per question]
-    S1 --> G{Compare:<br/>any metric worse<br/>than max-drop?}
+    R1 -.-> K["Cost profile<br/>build s, p50 / p95, RSS:<br/>recorded, not gated"]
+    R2 -.-> K
+    S1 --> G{"For any metric:<br/>drop exceeds max-drop <b>and</b><br/>95% paired-bootstrap CI<br/>excludes 0?"}
     S2 --> G
     G -- no --> P[exit 0]
     G -- yes --> F[exit 1 + regressed metrics<br/>+ newly failing questions]
@@ -100,6 +104,7 @@ Code layout:
 ## Quickstart
 
 ```bash
+# Python 3.11+
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 python -m pytest -q
@@ -157,12 +162,12 @@ On SciFact the same chunking change fails with every interval well below zero (s
 
 ## The gate in CI
 
-This repository's own workflow ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the tests, gates a candidate config on the fixture, and checks that a known regression still exits `1` (threshold-only, as above). It stays offline: no models, no SciFact. In a product repository the step looks like this:
+This repository's own workflow ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) lints and type-checks the code, runs the tests, gates a candidate config on the fixture, and checks that a known regression still exits `1` (threshold-only, as above). It stays offline: no models, no SciFact. In a product repository the step looks like this:
 
 ```yaml
 - name: Retrieval regression gate
   run: |
-    pip install "rag-retrieval-gate @ git+https://github.com/MatthewPaver/rag-retrieval-gate"
+    pip install "rag-retrieval-gate @ git+https://github.com/MatthewPaver/rag-retrieval-gate@v0.1.0"
     rag-gate gate \
       --dataset eval/questions.json --k 5 \
       --baseline eval/retrieval-main.json \
