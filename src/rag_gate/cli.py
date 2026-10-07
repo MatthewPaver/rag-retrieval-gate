@@ -1,6 +1,6 @@
 """rag-gate: score retrieval configurations and fail CI when a candidate regresses.
 
-Exit codes: 0 = pass, 1 = candidate regressed beyond the threshold, 2 = bad input or usage.
+Exit codes: 0 = pass, 1 = candidate significantly worse by more than --max-drop, 2 = bad input or usage.
 """
 
 from __future__ import annotations
@@ -39,6 +39,11 @@ def _summary(report: dict) -> str:
     return f"{report['config']['name']} on {report['dataset']['name']} (k={report['k']}): {metrics}"
 
 
+def _gate_options(args: argparse.Namespace) -> dict:
+    return {"max_drop": args.max_drop, "bootstrap": not args.no_bootstrap, "alpha": args.alpha,
+            "resamples": args.resamples, "seed": args.seed}
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rag-gate", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -50,23 +55,33 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--max-cases", type=int, help="score only the first N cases (file order; BEIR is sorted by query id)")
         p.add_argument("--allow-download", action="store_true",
                        help="let dense retrievers download models; default is local cache only")
+        p.add_argument("--device", default="cpu", help="torch device for dense / re-rank models (default cpu)")
         p.add_argument("--output", type=Path, help="write the full JSON report here")
 
     p_run = sub.add_parser("run", help="score one configuration")
     p_run.add_argument("--config", type=Path, required=True)
     dataset_args(p_run)
 
+    def gate_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument("--max-drop", type=float, default=0.02,
+                       help="smallest absolute drop in a metric that counts as a regression (default 0.02)")
+        p.add_argument("--alpha", type=float, default=0.05,
+                       help="a drop must also be significant: the (1 - alpha) bootstrap CI excludes zero (default 0.05)")
+        p.add_argument("--resamples", type=int, default=10_000, help="paired bootstrap resamples (default 10000)")
+        p.add_argument("--seed", type=int, default=0, help="bootstrap seed (default 0)")
+        p.add_argument("--no-bootstrap", action="store_true",
+                       help="threshold only, no significance test; for tiny fixtures where a bootstrap has no power")
+
     p_cmp = sub.add_parser("compare", help="compare two saved run reports")
     p_cmp.add_argument("baseline", type=Path)
     p_cmp.add_argument("candidate", type=Path)
-    p_cmp.add_argument("--max-drop", type=float, default=0.02)
     p_cmp.add_argument("--output", type=Path)
+    gate_args(p_cmp)
 
     p_gate = sub.add_parser("gate", help="run baseline and candidate configurations, then compare")
     p_gate.add_argument("--baseline", type=Path, required=True)
     p_gate.add_argument("--candidate", type=Path, required=True)
-    p_gate.add_argument("--max-drop", type=float, default=0.02,
-                        help="largest tolerated absolute drop in any metric (default 0.02)")
+    gate_args(p_gate)
     dataset_args(p_gate)
     return parser
 
@@ -79,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
             result = compare(
                 json.loads(args.baseline.read_text(encoding="utf-8")),
                 json.loads(args.candidate.read_text(encoding="utf-8")),
-                max_drop=args.max_drop,
+                **_gate_options(args),
             )
             _write(args.output, result)
             print(format_comparison(result))
@@ -87,14 +102,16 @@ def main(argv: list[str] | None = None) -> int:
 
         dataset = _load(args.dataset, args.max_cases)
         if args.command == "run":
-            report = run(dataset, _load_config(args.config), k=args.k, allow_download=args.allow_download)
+            report = run(dataset, _load_config(args.config), k=args.k, allow_download=args.allow_download,
+                         device=args.device)
             _write(args.output, report)
             print(_summary(report))
             return 0
 
-        baseline = run(dataset, _load_config(args.baseline), k=args.k, allow_download=args.allow_download)
-        candidate = run(dataset, _load_config(args.candidate), k=args.k, allow_download=args.allow_download)
-        result = compare(baseline, candidate, max_drop=args.max_drop)
+        options = {"k": args.k, "allow_download": args.allow_download, "device": args.device}
+        baseline = run(dataset, _load_config(args.baseline), **options)
+        candidate = run(dataset, _load_config(args.candidate), **options)
+        result = compare(baseline, candidate, **_gate_options(args))
         _write(args.output, {**result, "baseline_report": baseline, "candidate_report": candidate})
         print(format_comparison(result))
         return 0 if result["passed"] else 1

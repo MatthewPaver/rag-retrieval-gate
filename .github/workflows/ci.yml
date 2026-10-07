@@ -36,11 +36,12 @@ jobs:
           --candidate configs/candidate-bm25-b05.json
           --max-drop 0.02 --output reports/gate.json
       - name: Gate self-test (known regression must fail)
+        # Six questions give a bootstrap no power, so the fixture tripwire is threshold-only.
         run: |
           set +e
           rag-gate gate --dataset fixtures/policies.json --k 3 \
             --baseline configs/baseline.json \
-            --candidate configs/candidate-chunk-12.json --max-drop 0.02
+            --candidate configs/candidate-chunk-12.json --max-drop 0.02 --no-bootstrap
           status=$?
           set -e
           if [ "$status" -ne 1 ]; then
