@@ -23,12 +23,16 @@ def tokenise(text: str) -> list[str]:
 @dataclass(frozen=True)
 class RetrieverConfig:
     name: str
-    retriever: str = "bm25"  # "bm25" or "dense"
-    model: str | None = None  # sentence-transformers model id, dense only
+    retriever: str = "bm25"  # "bm25", "dense" or "hybrid" (BM25 + dense, reciprocal rank fusion)
+    model: str | None = None  # sentence-transformers model id, dense and hybrid only
     chunk_words: int | None = None  # None = index whole documents
     chunk_overlap: int = 0
     bm25_k1: float = 1.2
     bm25_b: float = 0.75
+    rrf_k: int = 60  # RRF constant from Cormack, Clarke & Buttcher (2009); fixed, not tuned
+    fusion_depth: int = 100  # documents taken from each retriever before fusion
+    rerank_model: str | None = None  # optional cross-encoder applied to the first stage's top documents
+    rerank_depth: int = 100  # documents re-scored by the cross-encoder (BEIR paper re-ranks BM25 top 100)
 
     @classmethod
     def from_dict(cls, raw: dict) -> "RetrieverConfig":
@@ -37,10 +41,12 @@ class RetrieverConfig:
         if unknown:
             raise ValueError(f"unknown config keys: {sorted(unknown)}")
         config = cls(**raw)
-        if config.retriever not in {"bm25", "dense"}:
-            raise ValueError("retriever must be 'bm25' or 'dense'")
-        if config.retriever == "dense" and not config.model:
-            raise ValueError("dense retriever needs a 'model'")
+        if config.retriever not in {"bm25", "dense", "hybrid"}:
+            raise ValueError("retriever must be 'bm25', 'dense' or 'hybrid'")
+        if config.retriever in {"dense", "hybrid"} and not config.model:
+            raise ValueError(f"{config.retriever} retriever needs a 'model'")
+        if config.rrf_k < 1 or config.fusion_depth < 1 or config.rerank_depth < 1:
+            raise ValueError("rrf_k, fusion_depth and rerank_depth must be positive")
         if config.chunk_words is not None and config.chunk_words < 1:
             raise ValueError("chunk_words must be positive")
         if not 0 <= config.chunk_overlap < (config.chunk_words or 1):
@@ -129,6 +135,7 @@ class DenseRetriever:
         self._np = np
         self.parent_ids = [parent for parent, _ in chunks]
         self.encoder = encoder
+        self.models = [encoder]
         self.batch_size = batch_size
         self.matrix = self._encode([text for _, text in chunks])
 
@@ -150,12 +157,68 @@ class DenseRetriever:
         return results
 
 
-def load_sentence_transformer(model: str, *, allow_download: bool):
+class HybridRetriever:
+    """Reciprocal rank fusion of two document rankings: score(d) = sum 1 / (rrf_k + rank).
+
+    Each retriever contributes its top `depth` documents. Ties go to the document BM25 ranked first.
+    """
+
+    def __init__(self, sparse: Retriever, dense: Retriever, *, rrf_k: int = 60, depth: int = 100):
+        self.sparse, self.dense, self.rrf_k, self.depth = sparse, dense, rrf_k, depth
+        self.models = getattr(dense, "models", [])
+
+    def search_many(self, queries: Sequence[str], k: int) -> list[list[str]]:
+        depth = max(self.depth, k)
+        results = []
+        for sparse, dense in zip(self.sparse.search_many(queries, depth), self.dense.search_many(queries, depth), strict=True):
+            scores: dict[str, float] = defaultdict(float)
+            order: dict[str, int] = {}
+            for ranking in (sparse, dense):
+                for rank, doc_id in enumerate(ranking, 1):
+                    scores[doc_id] += 1 / (self.rrf_k + rank)
+                    order.setdefault(doc_id, len(order))
+            results.append(sorted(scores, key=lambda d: (-scores[d], order[d]))[:k])
+        return results
+
+
+class PairScorer(Protocol):
+    def predict(self, pairs: Sequence[tuple[str, str]], **kwargs) -> object: ...
+
+
+class RerankRetriever:
+    """Re-score the first stage's top `depth` documents with a cross-encoder over (query, full document)."""
+
+    def __init__(self, first_stage: Retriever, scorer: PairScorer, documents: Sequence[Document], *, depth: int = 100):
+        self.first_stage, self.scorer, self.depth = first_stage, scorer, depth
+        self.text = {doc.id: doc.text for doc in documents}
+        self.models = [*getattr(first_stage, "models", []), scorer]
+
+    def search_many(self, queries: Sequence[str], k: int) -> list[list[str]]:
+        results = []
+        for query, candidates in zip(queries, self.first_stage.search_many(queries, max(self.depth, k)), strict=True):
+            if not candidates:
+                results.append([])
+                continue
+            scores = [float(s) for s in self.scorer.predict([(query, self.text[d]) for d in candidates])]
+            ranked = sorted(range(len(candidates)), key=lambda i: (-scores[i], i))
+            results.append([candidates[i] for i in ranked[:k]])
+        return results
+
+
+def load_sentence_transformer(model: str, *, allow_download: bool, device: str = "cpu"):
     try:
         from sentence_transformers import SentenceTransformer
     except ImportError as exc:  # pragma: no cover - depends on optional extra
         raise RuntimeError("dense retrieval needs: pip install 'rag-retrieval-gate[dense]'") from exc
-    return SentenceTransformer(model, local_files_only=not allow_download)
+    return SentenceTransformer(model, local_files_only=not allow_download, device=device)
+
+
+def load_cross_encoder(model: str, *, allow_download: bool, device: str = "cpu"):
+    try:
+        from sentence_transformers import CrossEncoder
+    except ImportError as exc:  # pragma: no cover - depends on optional extra
+        raise RuntimeError("re-ranking needs: pip install 'rag-retrieval-gate[dense]'") from exc
+    return CrossEncoder(model, local_files_only=not allow_download, device=device)
 
 
 def build_retriever(
@@ -163,10 +226,21 @@ def build_retriever(
     documents: Sequence[Document],
     *,
     encoder: Encoder | None = None,
+    scorer: PairScorer | None = None,
     allow_download: bool = False,
+    device: str = "cpu",
 ) -> Retriever:
     chunks = chunk(documents, config.chunk_words, config.chunk_overlap)
+    retriever: Retriever
     if config.retriever == "bm25":
-        return BM25Retriever(chunks, config.bm25_k1, config.bm25_b)
-    encoder = encoder or load_sentence_transformer(config.model, allow_download=allow_download)
-    return DenseRetriever(chunks, encoder)
+        retriever = BM25Retriever(chunks, config.bm25_k1, config.bm25_b)
+    else:
+        encoder = encoder or load_sentence_transformer(config.model, allow_download=allow_download, device=device)
+        retriever = DenseRetriever(chunks, encoder)
+        if config.retriever == "hybrid":
+            sparse = BM25Retriever(chunks, config.bm25_k1, config.bm25_b)
+            retriever = HybridRetriever(sparse, retriever, rrf_k=config.rrf_k, depth=config.fusion_depth)
+    if config.rerank_model:
+        scorer = scorer or load_cross_encoder(config.rerank_model, allow_download=allow_download, device=device)
+        retriever = RerankRetriever(retriever, scorer, documents, depth=config.rerank_depth)
+    return retriever

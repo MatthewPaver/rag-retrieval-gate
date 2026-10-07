@@ -1,0 +1,1 @@
+{"name": "candidate-hybrid-minilm", "retriever": "hybrid", "model": "sentence-transformers/all-MiniLM-L6-v2", "rrf_k": 60, "fusion_depth": 100}

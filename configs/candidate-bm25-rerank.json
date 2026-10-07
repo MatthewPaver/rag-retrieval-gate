@@ -1,0 +1,1 @@
+{"name": "candidate-bm25-rerank-minilm", "retriever": "bm25", "rerank_model": "cross-encoder/ms-marco-MiniLM-L-6-v2", "rerank_depth": 100}
