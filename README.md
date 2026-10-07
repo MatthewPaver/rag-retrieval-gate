@@ -111,10 +111,11 @@ rag-gate gate --dataset fixtures/policies.json --k 3 \
 
 Exit codes: `0` pass, `1` the candidate is significantly worse by more than `--max-drop` (default `0.02`, absolute) on at least one metric, `2` bad input or usage.
 
-To score one configuration and keep the full per-question report:
+To score each configuration separately, keep the full per-question reports and compare them:
 
 ```bash
 rag-gate run --dataset fixtures/policies.json --k 3 --config configs/baseline.json --output reports/baseline.json
+rag-gate run --dataset fixtures/policies.json --k 3 --config configs/candidate-chunk-12.json --output reports/candidate.json
 rag-gate compare reports/baseline.json reports/candidate.json --max-drop 0.02
 ```
 
