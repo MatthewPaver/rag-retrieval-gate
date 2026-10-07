@@ -3,16 +3,21 @@ import subprocess
 import sys
 
 import pytest
+from conftest import ROOT
 
 from rag_gate.gate import compare
-from conftest import ROOT
 
 
 def report(name, **metrics):
     base = {"hit_at_k": 1.0, "mrr_at_k": 0.9, "hard_negative_top1_rate": 0.0, "citation_precision": None}
     base.update(metrics)
-    return {"dataset": {"name": "d", "documents": 2, "cases": 1}, "k": 3, "config": {"name": name},
-            "metrics": base, "cases": [{"id": "c1", "passed": base["hit_at_k"] == 1.0}]}
+    return {
+        "dataset": {"name": "d", "documents": 2, "cases": 1},
+        "k": 3,
+        "config": {"name": name},
+        "metrics": base,
+        "cases": [{"id": "c1", "passed": base["hit_at_k"] == 1.0}],
+    }
 
 
 def test_drop_within_threshold_passes_and_beyond_fails():
@@ -35,8 +40,9 @@ def test_reports_from_different_datasets_or_k_cannot_be_compared():
 
 
 def cli(*args):
-    return subprocess.run([sys.executable, "-m", "rag_gate", *map(str, args)],
-                          cwd=ROOT, capture_output=True, text=True, timeout=60)
+    return subprocess.run(
+        [sys.executable, "-m", "rag_gate", *map(str, args)], cwd=ROOT, capture_output=True, text=True, timeout=60
+    )
 
 
 def test_cli_gate_passes_for_equivalent_config_and_exits_one_on_regression(tmp_path):
@@ -58,8 +64,17 @@ def test_cli_gate_passes_for_equivalent_config_and_exits_one_on_regression(tmp_p
 
 def test_cli_run_then_compare_round_trips_saved_reports(tmp_path):
     for name in ("baseline", "candidate-chunk-12"):
-        result = cli("run", "--dataset", "fixtures/policies.json", "--k", "3",
-                     "--config", f"configs/{name}.json", "--output", tmp_path / f"{name}.json")
+        result = cli(
+            "run",
+            "--dataset",
+            "fixtures/policies.json",
+            "--k",
+            "3",
+            "--config",
+            f"configs/{name}.json",
+            "--output",
+            tmp_path / f"{name}.json",
+        )
         assert result.returncode == 0, result.stderr
     loose = cli("compare", tmp_path / "baseline.json", tmp_path / "candidate-chunk-12.json", "--max-drop", "0.1")
     assert loose.returncode == 0
@@ -74,17 +89,35 @@ def test_cli_input_errors_exit_two_without_a_traceback(tmp_path):
 
 
 def case(case_id, hit=True, rr=1.0):
-    return {"id": case_id, "hit": hit, "reciprocal_rank": rr, "recall": float(hit), "ndcg": rr,
-            "missing_context_ids": [] if hit else ["x"], "hard_negative_first": False, "has_hard_negatives": False,
-            "cited_ids": [], "citations_not_retrieved": [], "citations_not_relevant": [], "passed": hit}
+    return {
+        "id": case_id,
+        "hit": hit,
+        "reciprocal_rank": rr,
+        "recall": float(hit),
+        "ndcg": rr,
+        "missing_context_ids": [] if hit else ["x"],
+        "hard_negative_first": False,
+        "has_hard_negatives": False,
+        "cited_ids": [],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": hit,
+    }
 
 
 def scored(name, cases):
     n = len(cases)
-    metrics = {"hit_at_k": round(sum(c["hit"] for c in cases) / n, 4),
-               "mrr_at_k": round(sum(c["reciprocal_rank"] for c in cases) / n, 4)}
-    return {"dataset": {"name": "d", "documents": 9, "cases": n}, "k": 10, "config": {"name": name},
-            "metrics": metrics, "cases": cases}
+    metrics = {
+        "hit_at_k": round(sum(c["hit"] for c in cases) / n, 4),
+        "mrr_at_k": round(sum(c["reciprocal_rank"] for c in cases) / n, 4),
+    }
+    return {
+        "dataset": {"name": "d", "documents": 9, "cases": n},
+        "k": 10,
+        "config": {"name": name},
+        "metrics": metrics,
+        "cases": cases,
+    }
 
 
 def verdicts(result):

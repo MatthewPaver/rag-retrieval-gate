@@ -100,8 +100,11 @@ def fetch_huggingface(output_root: Path) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--acknowledge-licence", action="store_true",
-                        help=f"confirm you reviewed the SciFact licence listed in {DATASET_CATALOGUE}")
+    parser.add_argument(
+        "--acknowledge-licence",
+        action="store_true",
+        help=f"confirm you reviewed the SciFact licence listed in {DATASET_CATALOGUE}",
+    )
     parser.add_argument("--source", choices=["ukp", "huggingface"], default="ukp")
     parser.add_argument("--output-root", type=Path, default=Path("data/beir"))
     parser.add_argument("--archive", type=Path, help="use a pre-downloaded UKP scifact.zip")
@@ -112,8 +115,10 @@ def main() -> int:
             f"Review {DATASET_CATALOGUE} and the SciFact licence first."
         )
     args.output_root.mkdir(parents=True, exist_ok=True)
-    source = fetch_huggingface(args.output_root) if args.source == "huggingface" else fetch_ukp(
-        args.output_root, args.archive
+    source = (
+        fetch_huggingface(args.output_root)
+        if args.source == "huggingface"
+        else fetch_ukp(args.output_root, args.archive)
     )
     dataset_dir = args.output_root / "scifact"
     required = [dataset_dir / "corpus.jsonl", dataset_dir / "queries.jsonl", dataset_dir / "qrels" / "test.tsv"]

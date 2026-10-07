@@ -3,7 +3,13 @@ import pytest
 
 from rag_gate.data import Document
 from rag_gate.retrievers import (
-    BM25Retriever, DenseRetriever, HybridRetriever, RerankRetriever, RetrieverConfig, build_retriever, chunk,
+    BM25Retriever,
+    DenseRetriever,
+    HybridRetriever,
+    RerankRetriever,
+    RetrieverConfig,
+    build_retriever,
+    chunk,
 )
 
 DOCS = [
@@ -57,19 +63,24 @@ def test_dense_model_loading_is_cache_only_unless_download_is_allowed(monkeypatc
     config = RetrieverConfig.from_dict({"name": "d", "retriever": "dense", "model": "m"})
     build_retriever(config, DOCS)
     build_retriever(config, DOCS, allow_download=True)
-    assert calls == [("m", {"local_files_only": True, "device": "cpu"}),
-                     ("m", {"local_files_only": False, "device": "cpu"})]
+    assert calls == [
+        ("m", {"local_files_only": True, "device": "cpu"}),
+        ("m", {"local_files_only": False, "device": "cpu"}),
+    ]
 
 
-@pytest.mark.parametrize("raw, message", [
-    ({"name": "x", "retriever": "tfidf"}, "retriever"),
-    ({"name": "x", "retriever": "dense"}, "model"),
-    ({"name": "x", "retriever": "hybrid"}, "model"),
-    ({"name": "x", "rrf_k": 0}, "rrf_k"),
-    ({"name": "x", "chunk_words": 0}, "chunk_words"),
-    ({"name": "x", "chunk_words": 4, "chunk_overlap": 4}, "chunk_overlap"),
-    ({"name": "x", "typo": 1}, "unknown"),
-])
+@pytest.mark.parametrize(
+    "raw, message",
+    [
+        ({"name": "x", "retriever": "tfidf"}, "retriever"),
+        ({"name": "x", "retriever": "dense"}, "model"),
+        ({"name": "x", "retriever": "hybrid"}, "model"),
+        ({"name": "x", "rrf_k": 0}, "rrf_k"),
+        ({"name": "x", "chunk_words": 0}, "chunk_words"),
+        ({"name": "x", "chunk_words": 4, "chunk_overlap": 4}, "chunk_overlap"),
+        ({"name": "x", "typo": 1}, "unknown"),
+    ],
+)
 def test_invalid_configs_are_rejected(raw, message):
     with pytest.raises(ValueError, match=message):
         RetrieverConfig.from_dict(raw)

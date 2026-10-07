@@ -83,9 +83,7 @@ def aggregate(results: Sequence[CaseResult]) -> dict[str, float | int | None]:
     with_negatives = [r for r in results if r.has_hard_negatives]
     cited = [r for r in results if r.cited_ids]
     citations = [
-        c not in r.citations_not_retrieved and c not in r.citations_not_relevant
-        for r in cited
-        for c in r.cited_ids
+        c not in r.citations_not_retrieved and c not in r.citations_not_relevant for r in cited for c in r.cited_ids
     ]
     return {
         "cases": len(results),

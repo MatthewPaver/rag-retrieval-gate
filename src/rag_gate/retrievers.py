@@ -6,7 +6,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from typing import Protocol, Sequence
+from typing import Iterable, Protocol, Sequence
 
 from .data import Document
 
@@ -102,9 +102,7 @@ class BM25Retriever:
                 self.postings[term].append((index, tf))
         n = len(chunks)
         self.avg_len = (sum(self.lengths) / n) if n else 0.0
-        self.idf = {
-            term: math.log(1 + (n - len(p) + 0.5) / (len(p) + 0.5)) for term, p in self.postings.items()
-        }
+        self.idf = {term: math.log(1 + (n - len(p) + 0.5) / (len(p) + 0.5)) for term, p in self.postings.items()}
 
     def search(self, query: str, k: int) -> list[str]:
         scores: dict[int, float] = defaultdict(float)
@@ -170,7 +168,9 @@ class HybridRetriever:
     def search_many(self, queries: Sequence[str], k: int) -> list[list[str]]:
         depth = max(self.depth, k)
         results = []
-        for sparse, dense in zip(self.sparse.search_many(queries, depth), self.dense.search_many(queries, depth), strict=True):
+        for sparse, dense in zip(
+            self.sparse.search_many(queries, depth), self.dense.search_many(queries, depth), strict=True
+        ):
             scores: dict[str, float] = defaultdict(float)
             order: dict[str, int] = {}
             for ranking in (sparse, dense):
@@ -182,7 +182,7 @@ class HybridRetriever:
 
 
 class PairScorer(Protocol):
-    def predict(self, pairs: Sequence[tuple[str, str]], **kwargs) -> object: ...
+    def predict(self, pairs: Sequence[tuple[str, str]], **kwargs) -> Iterable[float]: ...
 
 
 class RerankRetriever:
@@ -194,7 +194,7 @@ class RerankRetriever:
         self.models = [*getattr(first_stage, "models", []), scorer]
 
     def search_many(self, queries: Sequence[str], k: int) -> list[list[str]]:
-        results = []
+        results: list[list[str]] = []
         for query, candidates in zip(queries, self.first_stage.search_many(queries, max(self.depth, k)), strict=True):
             if not candidates:
                 results.append([])
@@ -235,6 +235,8 @@ def build_retriever(
     if config.retriever == "bm25":
         retriever = BM25Retriever(chunks, config.bm25_k1, config.bm25_b)
     else:
+        if config.model is None:
+            raise ValueError(f"{config.retriever} retriever needs a 'model'")
         encoder = encoder or load_sentence_transformer(config.model, allow_download=allow_download, device=device)
         retriever = DenseRetriever(chunks, encoder)
         if config.retriever == "hybrid":

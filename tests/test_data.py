@@ -1,9 +1,9 @@
 import json
 
 import pytest
+from conftest import ROOT
 
 from rag_gate.data import load_beir, load_dataset, load_json_fixture
-from conftest import ROOT
 
 
 def test_committed_fixture_loads_with_answers_and_hard_negatives():
@@ -13,15 +13,18 @@ def test_committed_fixture_loads_with_answers_and_hard_negatives():
     assert any(case.hard_negative_ids for case in dataset.cases)
 
 
-@pytest.mark.parametrize("overrides, message", [
-    ({"relevant_ids": ["missing"]}, "unknown"),
-    ({"relevant_ids": []}, "must not be empty"),
-    ({"relevant_ids": "refund"}, "list"),
-    ({"query": " "}, "query"),
-    ({"hard_negative_ids": ["refund"]}, "overlap"),
-    ({"answer": "No citation here."}, "cite"),
-    ({"answer": "Cites a ghost [ghost]."}, "unknown"),
-])
+@pytest.mark.parametrize(
+    "overrides, message",
+    [
+        ({"relevant_ids": ["missing"]}, "unknown"),
+        ({"relevant_ids": []}, "must not be empty"),
+        ({"relevant_ids": "refund"}, "list"),
+        ({"query": " "}, "query"),
+        ({"hard_negative_ids": ["refund"]}, "overlap"),
+        ({"answer": "No citation here."}, "cite"),
+        ({"answer": "Cites a ghost [ghost]."}, "unknown"),
+    ],
+)
 def test_bad_labels_are_rejected_with_a_specific_message(small_fixture, overrides, message):
     with pytest.raises(ValueError, match=message):
         load_json_fixture(small_fixture(**overrides))

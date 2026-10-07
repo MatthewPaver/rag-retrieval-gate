@@ -23,13 +23,19 @@ PER_CASE: dict[str, PerCase] = {
     "recall_at_k": lambda c: (float(c["recall"]), 1.0),
     "ndcg_at_k": lambda c: (float(c["ndcg"]), 1.0),
     "context_coverage_at_k": lambda c: (float(not c["missing_context_ids"]), 1.0),
-    "hard_negative_top1_rate": lambda c: (float(c["hard_negative_first"]), 1.0) if c["has_hard_negatives"] else (0.0, 0.0),
+    "hard_negative_top1_rate": lambda c: (
+        (float(c["hard_negative_first"]), 1.0) if c["has_hard_negatives"] else (0.0, 0.0)
+    ),
     "citation_precision": _citations_ok,
-    "answers_fully_supported_rate": lambda c: (float(not c["citations_not_retrieved"]), 1.0) if c["cited_ids"] else (0.0, 0.0),
+    "answers_fully_supported_rate": lambda c: (
+        (float(not c["citations_not_retrieved"]), 1.0) if c["cited_ids"] else (0.0, 0.0)
+    ),
 }
 
 
-def paired_deltas(metric: str, baseline_cases: Sequence[dict], candidate_cases: Sequence[dict]) -> list[tuple[float, float]]:
+def paired_deltas(
+    metric: str, baseline_cases: Sequence[dict], candidate_cases: Sequence[dict]
+) -> list[tuple[float, float]]:
     """Per-question (candidate - baseline numerator, denominator), paired by question id."""
 
     by_id = {case["id"]: case for case in candidate_cases}

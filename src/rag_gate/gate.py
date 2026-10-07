@@ -67,15 +67,23 @@ def hardware() -> dict:
     cpu = platform.processor() or platform.machine()
     try:
         if sys.platform == "darwin":
-            cpu = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True,
-                                 text=True, timeout=5).stdout.strip() or cpu
+            cpu = (
+                subprocess.run(
+                    ["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True, timeout=5
+                ).stdout.strip()
+                or cpu
+            )
         elif os.path.exists("/proc/cpuinfo"):
             with open("/proc/cpuinfo", encoding="utf-8") as handle:
                 cpu = next((line.split(":", 1)[1].strip() for line in handle if line.startswith("model name")), cpu)
     except (OSError, subprocess.SubprocessError):
         pass
-    return {"cpu": cpu, "cpu_count": os.cpu_count(), "os": f"{platform.system()} {platform.release()}",
-            "python": platform.python_version()}
+    return {
+        "cpu": cpu,
+        "cpu_count": os.cpu_count(),
+        "os": f"{platform.system()} {platform.release()}",
+        "python": platform.python_version(),
+    }
 
 
 def run(
@@ -93,8 +101,9 @@ def run(
     if k < 1:
         raise ValueError("k must be positive")
     started = time.perf_counter()
-    retriever = build_retriever(config, dataset.documents, encoder=encoder, scorer=scorer,
-                                allow_download=allow_download, device=device)
+    retriever = build_retriever(
+        config, dataset.documents, encoder=encoder, scorer=scorer, allow_download=allow_download, device=device
+    )
     build_s = time.perf_counter() - started
     rankings, latencies = [], []
     for case in dataset.cases:
@@ -154,8 +163,12 @@ def compare(
         worse_by = sign * delta
         ci = None
         if bootstrap:
-            ci = bootstrap_ci(paired_deltas(metric, baseline["cases"], candidate["cases"]),
-                              resamples=resamples, seed=seed, alpha=alpha)
+            ci = bootstrap_ci(
+                paired_deltas(metric, baseline["cases"], candidate["cases"]),
+                resamples=resamples,
+                seed=seed,
+                alpha=alpha,
+            )
         if ci is None:
             significantly_worse = significantly_better = not bootstrap
         else:
@@ -172,9 +185,18 @@ def compare(
         else:
             verdict = "ok"
         failed = verdict == "FAIL"
-        rows.append({"metric": metric, "baseline": before, "candidate": after, "delta": delta,
-                     "ci_low": ci[0] if ci else None, "ci_high": ci[1] if ci else None,
-                     "verdict": verdict, "failed": failed})
+        rows.append(
+            {
+                "metric": metric,
+                "baseline": before,
+                "candidate": after,
+                "delta": delta,
+                "ci_low": ci[0] if ci else None,
+                "ci_high": ci[1] if ci else None,
+                "verdict": verdict,
+                "failed": failed,
+            }
+        )
         if failed:
             regressions.append(metric)
     before_cases = {case["id"]: case["passed"] for case in baseline["cases"]}
@@ -198,8 +220,10 @@ def compare(
 def format_comparison(result: dict, *, limit_cases: int = 10) -> str:
     boot = result.get("bootstrap")
     ci_label = f"{100 * (1 - boot['alpha']):g}% CI" if boot else "CI"
-    header = (f"dataset={result['dataset']['name']} documents={result['dataset']['documents']} "
-              f"cases={result['dataset']['cases']} k={result['k']} max_drop={result['max_drop']}")
+    header = (
+        f"dataset={result['dataset']['name']} documents={result['dataset']['documents']} "
+        f"cases={result['dataset']['cases']} k={result['k']} max_drop={result['max_drop']}"
+    )
     if boot:
         header += f" bootstrap={boot['resamples']} seed={boot['seed']} alpha={boot['alpha']}"
     else:
@@ -211,15 +235,21 @@ def format_comparison(result: dict, *, limit_cases: int = 10) -> str:
     ]
     for row in result["metrics"]:
         ci = f"[{row['ci_low']:+.4f}, {row['ci_high']:+.4f}]" if row.get("ci_low") is not None else "-"
-        lines.append(f"{row['metric']:<30}{row['baseline']:>22.4f}{row['candidate']:>22.4f}"
-                     f"{row['delta']:>+10.4f}{ci:>22}  {row.get('verdict', 'FAIL' if row['failed'] else 'ok')}")
+        lines.append(
+            f"{row['metric']:<30}{row['baseline']:>22.4f}{row['candidate']:>22.4f}"
+            f"{row['delta']:>+10.4f}{ci:>22}  {row.get('verdict', 'FAIL' if row['failed'] else 'ok')}"
+        )
     perf = result.get("performance") or {}
     if perf.get("baseline") and perf.get("candidate"):
-        lines.append(f"{'cost (not gated)':<30}{'build s':>10}{'p50 ms':>10}{'p95 ms':>10}{'peak RSS MB':>13}{'model MB':>10}")
+        lines.append(
+            f"{'cost (not gated)':<30}{'build s':>10}{'p50 ms':>10}{'p95 ms':>10}{'peak RSS MB':>13}{'model MB':>10}"
+        )
         for side in ("baseline", "candidate"):
             p = perf[side]
-            lines.append(f"{result[side][:28]:<30}{p['index_build_s']:>10.2f}{p['query_p50_ms']:>10.2f}"
-                         f"{p['query_p95_ms']:>10.2f}{_num(p['peak_rss_mb']):>13}{_num(p['model_mb']):>10}")
+            lines.append(
+                f"{result[side][:28]:<30}{p['index_build_s']:>10.2f}{p['query_p50_ms']:>10.2f}"
+                f"{p['query_p95_ms']:>10.2f}{_num(p['peak_rss_mb']):>13}{_num(p['model_mb']):>10}"
+            )
     if result.get("hardware"):
         hw = result["hardware"]
         lines.append(f"hardware: {hw['cpu']}, {hw['cpu_count']} cores, {hw['os']}, Python {hw['python']}")
