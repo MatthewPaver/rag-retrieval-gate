@@ -6,17 +6,50 @@ import pytest
 from conftest import ROOT
 
 from rag_gate.gate import compare
+from rag_gate.identity import digest
+from rag_gate.stats import PER_CASE
+
+
+def identity(name):
+    return {
+        "schema_version": 2,
+        "metric_schema": 1,
+        "tool_version": "test",
+        "source_identity": {
+            "algorithm": "sha256-canonical-json-v1",
+            "corpus": "a" * 64,
+            "queries": "b" * 64,
+            "labels": "c" * 64,
+        },
+        "config_identity": digest({"name": name}),
+    }
 
 
 def report(name, **metrics):
-    base = {"hit_at_k": 1.0, "mrr_at_k": 0.9, "hard_negative_top1_rate": 0.0, "citation_precision": None}
+    base = {
+        "hit_at_k": 1.0,
+        "mrr_at_k": 0.9,
+        "recall_at_k": 1.0,
+        "ndcg_at_k": 1.0,
+        "context_coverage_at_k": 1.0,
+        "hard_negative_top1_rate": 0.0,
+        "citation_precision": None,
+        "answers_fully_supported_rate": None,
+    }
     base.update(metrics)
+    scored_case = case("c1", hit=base["hit_at_k"] == 1.0, rr=base["mrr_at_k"])
+    scored_case["recall"] = base["recall_at_k"]
+    scored_case["ndcg"] = base["ndcg_at_k"]
+    scored_case["missing_context_ids"] = []
+    scored_case["hard_negative_first"] = bool(base["hard_negative_top1_rate"])
+    scored_case["has_hard_negatives"] = True
     return {
+        **identity(name),
         "dataset": {"name": "d", "documents": 2, "cases": 1},
         "k": 3,
         "config": {"name": name},
         "metrics": base,
-        "cases": [{"id": "c1", "passed": base["hit_at_k"] == 1.0}],
+        "cases": [scored_case],
     }
 
 
@@ -28,7 +61,7 @@ def test_drop_within_threshold_passes_and_beyond_fails():
 
 
 def test_a_rise_in_hard_negatives_at_rank_one_is_a_regression():
-    result = compare(report("a"), report("b", hard_negative_top1_rate=0.5), max_drop=0.02, bootstrap=False)
+    result = compare(report("a"), report("b", hard_negative_top1_rate=1.0), max_drop=0.02, bootstrap=False)
     assert result["regressions"] == ["hard_negative_top1_rate"]
 
 
@@ -91,6 +124,7 @@ def test_cli_input_errors_exit_two_without_a_traceback(tmp_path):
 def case(case_id, hit=True, rr=1.0):
     return {
         "id": case_id,
+        "retrieved_ids": ["x"] if hit else [],
         "hit": hit,
         "reciprocal_rank": rr,
         "recall": float(hit),
@@ -107,11 +141,13 @@ def case(case_id, hit=True, rr=1.0):
 
 def scored(name, cases):
     n = len(cases)
-    metrics = {
-        "hit_at_k": round(sum(c["hit"] for c in cases) / n, 4),
-        "mrr_at_k": round(sum(c["reciprocal_rank"] for c in cases) / n, 4),
-    }
+    metrics = {}
+    for metric, extract in PER_CASE.items():
+        values = [extract(c) for c in cases]
+        denominator = sum(value[1] for value in values)
+        metrics[metric] = round(sum(value[0] for value in values) / denominator, 4) if denominator else None
     return {
+        **identity(name),
         "dataset": {"name": "d", "documents": 9, "cases": n},
         "k": 10,
         "config": {"name": name},
@@ -135,9 +171,15 @@ def test_a_known_regression_fails_with_an_interval_below_zero():
     before = [case(f"q{i}") for i in range(200)]
     after = [case(f"q{i}", hit=i >= 40, rr=1.0 if i >= 40 else 0.0) for i in range(200)]  # 20% of questions lost
     result = compare(scored("a", before), scored("b", after), max_drop=0.02)
-    assert not result["passed"] and result["regressions"] == ["hit_at_k", "mrr_at_k"]
+    assert not result["passed"] and result["regressions"] == [
+        "hit_at_k",
+        "mrr_at_k",
+        "recall_at_k",
+        "ndcg_at_k",
+        "context_coverage_at_k",
+    ]
     row = result["metrics"][0]
-    assert row["delta"] == -0.2 and row["ci_high"] < 0 and row["verdict"] == "FAIL"
+    assert row["delta"] == pytest.approx(-0.2) and row["ci_high"] < 0 and row["verdict"] == "FAIL"
 
 
 def test_a_small_noisy_drop_passes_as_not_significant():
@@ -148,7 +190,10 @@ def test_a_small_noisy_drop_passes_as_not_significant():
     result = compare(scored("a", before), scored("b", after), max_drop=0.02)
     hit = result["metrics"][0]
     assert result["passed"] and hit["delta"] < -0.02 and hit["ci_low"] < 0 <= hit["ci_high"]
-    assert verdicts(result) == {"hit_at_k": "not significant", "mrr_at_k": "ok"}
+    assert {key: value for key, value in verdicts(result).items() if key in ("hit_at_k", "mrr_at_k")} == {
+        "hit_at_k": "not significant",
+        "mrr_at_k": "ok",
+    }
 
 
 def test_bootstrap_is_reproducible_for_a_fixed_seed():

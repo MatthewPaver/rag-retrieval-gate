@@ -12,9 +12,11 @@ from dataclasses import asdict
 from typing import Sequence
 
 from .data import Dataset
+from .identity import METRIC_SCHEMA, SCHEMA_VERSION, TOOL_VERSION, dataset_identity, digest
 from .metrics import aggregate, score_case
 from .retrievers import Encoder, PairScorer, RetrieverConfig, build_retriever
 from .stats import bootstrap_ci, paired_deltas
+from .validation import validate_report
 
 # Metrics where a fall is a regression. hard_negative_top1_rate is the odd one out: a rise is bad.
 HIGHER_IS_BETTER = (
@@ -98,6 +100,8 @@ def run(
 ) -> dict:
     """Score one configuration. Queries run one at a time so latency is per question, as served."""
 
+    if not dataset.documents or not dataset.cases:
+        raise ValueError("dataset must contain documents and cases")
     if k < 1:
         raise ValueError("k must be positive")
     started = time.perf_counter()
@@ -114,6 +118,11 @@ def run(
     params, model_mb = _model_size(getattr(retriever, "models", []))
     results = [score_case(case, ranked, k) for case, ranked in zip(dataset.cases, rankings, strict=True)]
     return {
+        "schema_version": SCHEMA_VERSION,
+        "metric_schema": METRIC_SCHEMA,
+        "tool_version": TOOL_VERSION,
+        "source_identity": dataset_identity(dataset),
+        "config_identity": digest(asdict(config)),
         "dataset": {"name": dataset.name, "documents": len(dataset.documents), "cases": len(dataset.cases)},
         "config": asdict(config),
         "k": k,
@@ -128,7 +137,16 @@ def run(
             "device": device if getattr(retriever, "models", []) else "cpu",
         },
         "hardware": hardware(),
-        "cases": [result.to_dict() for result in results],
+        "cases": [
+            {
+                **result.to_dict(),
+                "query": case.query,
+                "relevant_ids": sorted(case.relevant_ids),
+                "required_context_ids": sorted(case.required_context_ids or case.relevant_ids),
+                "hard_negative_ids": sorted(case.hard_negative_ids),
+            }
+            for result, case in zip(results, dataset.cases, strict=True)
+        ],
     }
 
 
@@ -149,16 +167,30 @@ def compare(
     `bootstrap` the threshold alone decides, which is the only meaningful mode on a tiny fixture.
     """
 
-    if baseline["dataset"] != candidate["dataset"] or baseline["k"] != candidate["k"]:
-        raise ValueError("baseline and candidate must be scored on the same dataset and k")
-    if max_drop < 0:
-        raise ValueError("max_drop must be >= 0")
+    validate_report(baseline)
+    validate_report(candidate)
+    if (
+        baseline["source_identity"] != candidate["source_identity"]
+        or baseline["k"] != candidate["k"]
+        or baseline["dataset"] != candidate["dataset"]
+    ):
+        raise ValueError("baseline and candidate must be scored on the same dataset content, labels, questions and k")
+    if baseline["tool_version"] != candidate["tool_version"]:
+        raise ValueError("tool versions differ; regenerate both reports with the same version")
+    if {case["id"] for case in baseline["cases"]} != {case["id"] for case in candidate["cases"]}:
+        raise ValueError("baseline and candidate must score the same questions")
+    if not math.isfinite(max_drop) or max_drop < 0:
+        raise ValueError("max_drop must be finite and >= 0")
+    if not 0 < alpha < 1 or resamples < 1:
+        raise ValueError("resamples must be positive and alpha in (0, 1)")
     rows, regressions = [], []
     for metric in (*HIGHER_IS_BETTER, *LOWER_IS_BETTER):
         before, after = baseline["metrics"].get(metric), candidate["metrics"].get(metric)
-        if before is None or after is None:
+        if before is None and after is None:
             continue
-        delta = round(after - before, 4)
+        if before is None or after is None:
+            raise ValueError(f"metric applicability differs: {metric}")
+        delta = after - before
         sign = -1 if metric in HIGHER_IS_BETTER else 1  # sign * delta > 0 means worse
         worse_by = sign * delta
         ci = None
@@ -169,6 +201,8 @@ def compare(
                 seed=seed,
                 alpha=alpha,
             )
+        if bootstrap and ci is None:
+            raise ValueError(f"missing confidence evidence for applicable metric: {metric}")
         if ci is None:
             significantly_worse = significantly_better = not bootstrap
         else:
@@ -202,6 +236,14 @@ def compare(
     before_cases = {case["id"]: case["passed"] for case in baseline["cases"]}
     newly_failing = [case["id"] for case in candidate["cases"] if before_cases.get(case["id"]) and not case["passed"]]
     return {
+        "schema_version": SCHEMA_VERSION,
+        "metric_schema": METRIC_SCHEMA,
+        "tool_version": baseline["tool_version"],
+        "source_identity": baseline["source_identity"],
+        "baseline_config_identity": baseline["config_identity"],
+        "candidate_config_identity": candidate["config_identity"],
+        "baseline_report": baseline,
+        "candidate_report": candidate,
         "baseline": baseline["config"]["name"],
         "candidate": candidate["config"]["name"],
         "dataset": baseline["dataset"],

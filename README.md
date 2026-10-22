@@ -227,3 +227,24 @@ The loader rejects duplicate IDs, blank text, unknown document IDs, cases withou
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+## Portable review report
+
+![Portable offline report for the committed six-question fixture, showing MRR and nDCG regressions](docs/report.png)
+
+*Actual CLI-generated report. All six question checks pass while ranking metrics regress; this is a smoke fixture.*
+
+Keep the CLI in CI and attach a self-contained HTML comparison:
+
+```bash
+rag-gate gate --dataset fixtures/policies.json --k 3 \
+  --baseline configs/baseline.json --candidate configs/candidate-chunk-12.json \
+  --no-bootstrap --output reports/change.json --html reports/change.html
+# Expected exit 1: this committed candidate regresses ranking metrics.
+```
+
+Open `reports/change.html` offline. It shows matching recorded source identities, gate mode, metric deltas, individual question rankings, cost observations and the exact command. The embedded JSON download carries the same comparison. All six fixture case checks can pass while MRR and nDCG regress; the report distinguishes those outcomes. This fixture is a smoke test, not an independent accuracy benchmark.
+
+`compare baseline.json candidate.json --html reports/change.html` supports the same report from saved runs. Report schema 2 requires SHA-256 identities for canonical corpus text, query text, labels and configuration, plus metric schema and tool version. Both reports must identify the same dataset contents, questions, labels and k. Regenerate older run reports; their missing identities cannot establish comparability. Hashes are unsigned recorded provenance, not proof of authorship or an untampered evaluation.
+
+Required metrics must be present, numeric, finite and in [0, 1]. Optional hard-negative and citation metrics may be null only when no case has qualifying labels. Invalid or incomparable inputs exit 2; when `--html` is supplied the output explicitly says **Invalid comparison — No gate verdict**, replacing an older HTML result. A pass means no regression detected under this test. It does not prove improvement or generated-answer quality. Existing benchmark retrieval and metric calculations are unchanged; comparison thresholds now use the unrounded difference of the recorded aggregate scores.
