@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import sys
 from pathlib import Path
 
 from .data import Dataset, load_dataset
 from .gate import compare, format_comparison, run
+from .report import write_html, write_invalid
 from .retrievers import RetrieverConfig
 
 
@@ -22,6 +24,8 @@ def _load_config(path: Path) -> RetrieverConfig:
 def _load(path: Path, max_cases: int | None) -> Dataset:
     dataset = load_dataset(path)
     if max_cases is not None:
+        if max_cases < 1:
+            raise ValueError("max-cases must be positive")
         dataset = Dataset(dataset.name, dataset.documents, dataset.cases[:max_cases])
     return dataset
 
@@ -96,6 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument("baseline", type=Path)
     p_cmp.add_argument("candidate", type=Path)
     p_cmp.add_argument("--output", type=Path)
+    p_cmp.add_argument("--html", type=Path, help="write a portable offline HTML comparison")
     gate_args(p_cmp)
 
     p_gate = sub.add_parser("gate", help="run baseline and candidate configurations, then compare")
@@ -103,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_gate.add_argument("--candidate", type=Path, required=True)
     gate_args(p_gate)
     dataset_args(p_gate)
+    p_gate.add_argument("--html", type=Path, help="write a portable offline HTML comparison")
     return parser
 
 
@@ -116,7 +122,10 @@ def main(argv: list[str] | None = None) -> int:
                 json.loads(args.candidate.read_text(encoding="utf-8")),
                 **_gate_options(args),
             )
+            result["reproduce"] = shlex.join(["rag-gate", *(argv if argv is not None else sys.argv[1:])])
             _write(args.output, result)
+            if args.html:
+                write_html(args.html, result)
             print(format_comparison(result))
             return 0 if result["passed"] else 1
 
@@ -133,10 +142,23 @@ def main(argv: list[str] | None = None) -> int:
         baseline = run(dataset, _load_config(args.baseline), **options)
         candidate = run(dataset, _load_config(args.candidate), **options)
         result = compare(baseline, candidate, **_gate_options(args))
-        _write(args.output, {**result, "baseline_report": baseline, "candidate_report": candidate})
+        result["reproduce"] = shlex.join(["rag-gate", *(argv if argv is not None else sys.argv[1:])])
+        _write(args.output, result)
+        if args.html:
+            write_html(args.html, result)
         print(format_comparison(result))
         return 0 if result["passed"] else 1
-    except (OSError, ValueError, KeyError, RuntimeError, json.JSONDecodeError) as exc:
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, RuntimeError, json.JSONDecodeError) as exc:
+        if getattr(args, "output", None):
+            try:
+                _write(args.output, {"schema_version": 2, "state": "invalid", "error": str(exc)})
+            except OSError:
+                pass
+        if getattr(args, "html", None):
+            try:
+                write_invalid(args.html, str(exc))
+            except OSError:
+                pass
         print(f"rag-gate: error: {exc}", file=sys.stderr)
         return 2
 
