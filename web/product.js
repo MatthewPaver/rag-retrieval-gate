@@ -70,6 +70,7 @@ function render() {
   const after = report.candidate_report.cases[selected];
   byId('question').textContent = before.query;
   byId('position').textContent = `${selected + 1} of ${report.baseline_report.cases.length}`;
+  byId('position').setAttribute('aria-label', `Question ${selected + 1} of ${report.baseline_report.cases.length}`);
   byId('question-select').value = String(selected);
   byId('previous').disabled = selected === 0;
   byId('next').disabled = selected === report.baseline_report.cases.length - 1;
@@ -80,19 +81,21 @@ function render() {
   document.querySelector('.rank-swap').hidden = !retentionSwap;
   byId('verdict').textContent = report.passed ? 'No regression detected' : 'Hold this update';
   byId('decision').classList.toggle('no-regression', report.passed);
+  byId('decision-mark').setAttribute('d', report.passed ? 'M8 15h14' : 'M15 7v10m0 4v2');
+  byId('result-heading').textContent = report.passed ? 'The source order is unchanged in this test.' : 'Catch a change a pass count can miss.';
   if (retentionSwap) {
     byId('consequence').textContent = 'The current policy is still found. The outdated proposal now ranks above it.';
   } else if (before.id === 'refund-window-with-conflict') {
-    byId('consequence').textContent = 'An ended refund pilot ranks first in both runs. No new drop here does not mean the existing result is good.';
+    byId('consequence').textContent = 'An ended refund pilot ranks first in both runs. No new drop here does not mean the existing result is good.' + (!report.passed ? ' The update is held because data-retention evidence ranks worse.' : '');
   } else if (before.id === 'sev1-escalation' && !report.passed) {
-    byId('consequence').textContent = 'The incident handbook stays first. Other sources change order; the ranking score for this question does not fall.';
+    byId('consequence').textContent = 'The incident handbook stays first. Other sources change order; the ranking score for this question does not fall. The update is held because data-retention evidence ranks worse.';
   } else {
     byId('consequence').textContent = report.passed
       ? 'This question keeps the same source order. Passing this small test does not prove the assistant is ready to release.'
       : 'This question keeps the same source order. The update is held because data-retention evidence ranks worse.';
   }
   const count = report.candidate_report.cases.filter((entry) => entry.passed).length;
-  byId('case-summary').textContent = `All ${count} case checks pass. ${report.passed ? 'No ranking drop was detected in this test.' : 'Evidence ranking still worsens.'}`;
+  byId('case-summary').textContent = `${count} of ${report.candidate_report.cases.length} question checks pass. ${report.passed ? 'No overall source-order drop was detected in this test.' : 'Overall source order still worsens.'}`;
   byId('switch-result').textContent = report.passed ? 'Switch to regressing update' : 'Switch to unchanged ranking';
   const stem = report.passed ? 'unchanged' : 'comparison';
   byId('download').href = `${stem}.json`;

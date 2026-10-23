@@ -11,24 +11,25 @@
 </head>
 <body>
 <a class="skip" href="#example">Skip to example</a>
-<header class="masthead shell"><a class="brand" href="./">RAG Regression Gate</a><nav aria-label="Main"><a href="#example">Example</a><a href="#how">How it works</a><a href="https://github.com/MatthewPaver/rag-retrieval-gate">GitHub</a></nav></header>
+<header class="masthead shell"><a class="brand" href="./">RAG Regression Gate<span>Search checks for staff assistants</span></a><nav aria-label="Main"><a href="#example">Example</a><a href="#how">How it works</a><a href="https://github.com/MatthewPaver/rag-retrieval-gate">GitHub</a></nav></header>
 <main class="shell">
   <section class="intro" aria-labelledby="headline">
     <h1 id="headline">Keep the right policy within reach.</h1>
     <p>Before you update an internal help assistant, check which sources it brings back.</p>
-    <div class="actions"><a class="primary" href="#example">Explore the example</a><a href="#your-questions">Use your own questions</a></div>
+    <div class="actions"><a class="primary" href="#example">Explore the example</a><a href="#your-questions">Set up your own checks</a></div>
   </section>
   <section class="explorer" id="example" aria-labelledby="question">
     <p class="caption">Saved test results · 6 illustrative questions</p>
-    <div class="question-heading"><h2 id="question" tabindex="-1">How long should raw customer event records be retained?</h2><div class="question-navigation"><button id="previous" aria-label="Previous question" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><span id="position">3 of 6</span><button id="next" aria-label="Next question" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div></div>
+    <div class="question-heading"><h2 id="question" tabindex="-1">How long should raw customer event records be retained?</h2><div class="question-navigation"><button id="previous" aria-label="Previous question" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg></button><span id="position" aria-label="Question 3 of 6">3 of 6</span><button id="next" aria-label="Next question" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></button></div></div>
+    <div class="decision" id="decision"><svg class="decision-icon" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14"/><path id="decision-mark" d="M15 7v10m0 4v2"/></svg><strong id="verdict">Hold this update</strong><p id="consequence">The current policy is still found. The outdated proposal now ranks above it.</p></div>
     <div class="rankings">
       <section class="ranking" aria-labelledby="before-title"><h3 id="before-title">Before update</h3><p class="muted">Top sources returned for this question.</p><ol id="before-sources"><li><span class="rank" aria-hidden="true">1</span><div><div class="source-heading"><h4>Approved retention policy</h4><span class="source-state current">Current</span></div><p>Delete raw customer event records after 30 days.</p></div></li><li><span class="rank" aria-hidden="true">2</span><div><div class="source-heading"><h4>2022 proposal</h4><span class="source-state superseded">Superseded</span></div><p>365 days · never approved.</p></div></li></ol></section>
       <div class="rank-swap" aria-hidden="true"><span class="current-connector"></span><span class="old-connector"></span></div>
       <section class="ranking" aria-labelledby="after-title"><h3 id="after-title">After update</h3><p class="muted">Top sources returned for this question.</p><ol id="after-sources"><li><span class="rank" aria-hidden="true">1</span><div><div class="source-heading"><h4>2022 proposal</h4><span class="source-state superseded">Superseded</span></div><p>365 days · never approved.</p></div></li><li><span class="rank" aria-hidden="true">2</span><div><div class="source-heading"><h4>Approved retention policy</h4><span class="source-state current">Current</span></div><p>Delete raw customer event records after 30 days.</p></div></li></ol></section>
     </div>
-    <div class="decision" id="decision"><svg class="decision-icon" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14"/><path d="M15 7v10m0 4v2"/></svg><strong id="verdict">Hold this update</strong><p id="consequence">The current policy is still found. The outdated proposal now ranks above it.</p></div>
+
     <a class="evidence-link" href="#evidence">See the full evidence</a>
-    <div class="closing"><div><h2>Catch a change a pass count can miss.</h2><p id="case-summary">All 6 case checks pass. Evidence ranking still worsens.</p><div class="closing-actions"><button id="switch-result" class="text-button" hidden disabled>Switch to unchanged ranking</button><a id="download" href="comparison.json" download>Download report</a></div></div><p class="boundary">Checks source retrieval, not generated-answer correctness.<br>Small example, not an accuracy benchmark.</p></div>
+    <div class="closing"><div><h2 id="result-heading">Catch a change a pass count can miss.</h2><p id="case-summary">6 of 6 question checks pass. Overall source order still worsens.</p><div class="closing-actions"><button id="switch-result" class="text-button" hidden disabled>Switch to unchanged ranking</button><a id="download" href="comparison.json" download>Download report</a></div></div><p class="boundary">Checks source retrieval, not generated-answer correctness.<br>Small example, not an accuracy benchmark.</p></div>
     <p id="load-error" class="error" role="status" hidden>Interactive results could not load. Read the saved report below, or reload this page.</p>
     <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
     <noscript><p>JavaScript is off. The example above remains readable. <a href="report.html">Open all six questions in the offline report</a>.</p></noscript>

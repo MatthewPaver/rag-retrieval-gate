@@ -750,3 +750,9 @@ button:active:not(:disabled),.primary:active{
 
 
 :root{caret-color:var(--ink);scrollbar-color:var(--muted) var(--paper)}
+
+/* Lead with the decision on phones and preserve the paired source comparison. */
+.brand span { display:block; font-size:12px; line-height:1.4; font-weight:400; color:var(--muted); }
+.masthead { height:auto; min-height:86px; padding-bottom:14px; gap:20px; }
+.decision { margin-top:20px; margin-bottom:28px; }
+@media(max-width:650px) { .masthead { min-height:116px; } .brand { max-width:210px; } }
