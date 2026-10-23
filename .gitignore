@@ -8,3 +8,7 @@ dist/
 data/
 reports/
 .DS_Store
+
+.impeccable/
+
+.hallmark/

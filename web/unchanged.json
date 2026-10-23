@@ -1,0 +1,627 @@
+{
+  "schema_version": 2,
+  "metric_schema": 1,
+  "tool_version": "0.1.0",
+  "source_identity": {
+    "algorithm": "sha256-canonical-json-v1",
+    "corpus": "c54ae8f79ab12b2b8fa24ecdb4076bdeba0d275fb04414237a6920689a10e121",
+    "queries": "74d2fa56bae560ed52e233e78a3641cd64dcb94ea3ef7cfb3b35fe753a0e6c43",
+    "labels": "01b8f709643da815dab341a3ea84ee719026bd0e29d87e00b5383a405d5f8239"
+  },
+  "baseline_config_identity": "9fef4df77f9a8240ce0cc3c043bbea715a970b45bfa91031c5aefb9a87309d93",
+  "candidate_config_identity": "5613a07869eb2684279a6ab1516860dcd16bbd5cb8e5967b8bd46e57fc7c8d85",
+  "baseline_report": {
+    "schema_version": 2,
+    "metric_schema": 1,
+    "tool_version": "0.1.0",
+    "source_identity": {
+      "algorithm": "sha256-canonical-json-v1",
+      "corpus": "c54ae8f79ab12b2b8fa24ecdb4076bdeba0d275fb04414237a6920689a10e121",
+      "queries": "74d2fa56bae560ed52e233e78a3641cd64dcb94ea3ef7cfb3b35fe753a0e6c43",
+      "labels": "01b8f709643da815dab341a3ea84ee719026bd0e29d87e00b5383a405d5f8239"
+    },
+    "config_identity": "9fef4df77f9a8240ce0cc3c043bbea715a970b45bfa91031c5aefb9a87309d93",
+    "dataset": {
+      "name": "policies",
+      "documents": 11,
+      "cases": 6
+    },
+    "config": {
+      "name": "baseline-bm25",
+      "retriever": "bm25",
+      "model": null,
+      "chunk_words": null,
+      "chunk_overlap": 0,
+      "bm25_k1": 1.2,
+      "bm25_b": 0.75,
+      "rrf_k": 60,
+      "fusion_depth": 100,
+      "rerank_model": null,
+      "rerank_depth": 100
+    },
+    "k": 3,
+    "metrics": {
+      "cases": 6,
+      "hit_at_k": 1.0,
+      "mrr_at_k": 0.9167,
+      "recall_at_k": 1.0,
+      "ndcg_at_k": 0.9385,
+      "context_coverage_at_k": 1.0,
+      "hard_negative_top1_rate": 0.0,
+      "citation_precision": 1.0,
+      "answers_fully_supported_rate": 1.0,
+      "cases_passed": 6
+    },
+    "performance": {
+      "index_build_s": 0.0,
+      "query_p50_ms": 0.01,
+      "query_p95_ms": 0.01,
+      "peak_rss_mb": 27.0,
+      "model_params": null,
+      "model_mb": null,
+      "device": "cpu"
+    },
+    "hardware": {
+      "cpu": "Apple M4",
+      "cpu_count": 10,
+      "os": "Darwin 27.0.0",
+      "python": "3.14.7"
+    },
+    "cases": [
+      {
+        "id": "parental-leave",
+        "retrieved_ids": [
+          "leave-current",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "leave-current"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How much paid parental leave is available?",
+        "relevant_ids": [
+          "leave-current"
+        ],
+        "required_context_ids": [
+          "leave-current"
+        ],
+        "hard_negative_ids": [
+          "leave-hard-negative"
+        ]
+      },
+      {
+        "id": "api-key-rotation",
+        "retrieved_ids": [
+          "keys-current",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "keys-current"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How often should production API credentials be rotated?",
+        "relevant_ids": [
+          "keys-current"
+        ],
+        "required_context_ids": [
+          "keys-current"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "conflicting-retention-evidence",
+        "retrieved_ids": [
+          "retention-current",
+          "retention-superseded",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "retention-current",
+          "retention-superseded"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How long should raw customer event records be retained?",
+        "relevant_ids": [
+          "retention-current"
+        ],
+        "required_context_ids": [
+          "retention-current",
+          "retention-superseded"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "refund-window-with-conflict",
+        "retrieved_ids": [
+          "refund-superseded",
+          "refund-current",
+          "retention-current"
+        ],
+        "hit": true,
+        "reciprocal_rank": 0.5,
+        "recall": 1.0,
+        "ndcg": 0.6309297535714575,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "refund-current",
+          "refund-superseded"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How many days after delivery can a customer request a refund?",
+        "relevant_ids": [
+          "refund-current"
+        ],
+        "required_context_ids": [
+          "refund-current",
+          "refund-superseded"
+        ],
+        "hard_negative_ids": [
+          "refund-hard-negative"
+        ]
+      },
+      {
+        "id": "expense-deadline",
+        "retrieved_ids": [
+          "expenses"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "expenses"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "When are expense claims due?",
+        "relevant_ids": [
+          "expenses"
+        ],
+        "required_context_ids": [
+          "expenses"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "sev1-escalation",
+        "retrieved_ids": [
+          "incident-handbook",
+          "oncall-rota",
+          "expenses"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "incident-handbook"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How quickly must a severity-one incident be escalated?",
+        "relevant_ids": [
+          "incident-handbook"
+        ],
+        "required_context_ids": [
+          "incident-handbook"
+        ],
+        "hard_negative_ids": [
+          "oncall-rota"
+        ]
+      }
+    ]
+  },
+  "candidate_report": {
+    "schema_version": 2,
+    "metric_schema": 1,
+    "tool_version": "0.1.0",
+    "source_identity": {
+      "algorithm": "sha256-canonical-json-v1",
+      "corpus": "c54ae8f79ab12b2b8fa24ecdb4076bdeba0d275fb04414237a6920689a10e121",
+      "queries": "74d2fa56bae560ed52e233e78a3641cd64dcb94ea3ef7cfb3b35fe753a0e6c43",
+      "labels": "01b8f709643da815dab341a3ea84ee719026bd0e29d87e00b5383a405d5f8239"
+    },
+    "config_identity": "5613a07869eb2684279a6ab1516860dcd16bbd5cb8e5967b8bd46e57fc7c8d85",
+    "dataset": {
+      "name": "policies",
+      "documents": 11,
+      "cases": 6
+    },
+    "config": {
+      "name": "candidate-bm25-b05",
+      "retriever": "bm25",
+      "model": null,
+      "chunk_words": null,
+      "chunk_overlap": 0,
+      "bm25_k1": 1.2,
+      "bm25_b": 0.5,
+      "rrf_k": 60,
+      "fusion_depth": 100,
+      "rerank_model": null,
+      "rerank_depth": 100
+    },
+    "k": 3,
+    "metrics": {
+      "cases": 6,
+      "hit_at_k": 1.0,
+      "mrr_at_k": 0.9167,
+      "recall_at_k": 1.0,
+      "ndcg_at_k": 0.9385,
+      "context_coverage_at_k": 1.0,
+      "hard_negative_top1_rate": 0.0,
+      "citation_precision": 1.0,
+      "answers_fully_supported_rate": 1.0,
+      "cases_passed": 6
+    },
+    "performance": {
+      "index_build_s": 0.0,
+      "query_p50_ms": 0.0,
+      "query_p95_ms": 0.01,
+      "peak_rss_mb": 27.0,
+      "model_params": null,
+      "model_mb": null,
+      "device": "cpu"
+    },
+    "hardware": {
+      "cpu": "Apple M4",
+      "cpu_count": 10,
+      "os": "Darwin 27.0.0",
+      "python": "3.14.7"
+    },
+    "cases": [
+      {
+        "id": "parental-leave",
+        "retrieved_ids": [
+          "leave-current",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "leave-current"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How much paid parental leave is available?",
+        "relevant_ids": [
+          "leave-current"
+        ],
+        "required_context_ids": [
+          "leave-current"
+        ],
+        "hard_negative_ids": [
+          "leave-hard-negative"
+        ]
+      },
+      {
+        "id": "api-key-rotation",
+        "retrieved_ids": [
+          "keys-current",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "keys-current"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How often should production API credentials be rotated?",
+        "relevant_ids": [
+          "keys-current"
+        ],
+        "required_context_ids": [
+          "keys-current"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "conflicting-retention-evidence",
+        "retrieved_ids": [
+          "retention-current",
+          "retention-superseded",
+          "leave-hard-negative"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "retention-current",
+          "retention-superseded"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How long should raw customer event records be retained?",
+        "relevant_ids": [
+          "retention-current"
+        ],
+        "required_context_ids": [
+          "retention-current",
+          "retention-superseded"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "refund-window-with-conflict",
+        "retrieved_ids": [
+          "refund-superseded",
+          "refund-current",
+          "retention-current"
+        ],
+        "hit": true,
+        "reciprocal_rank": 0.5,
+        "recall": 1.0,
+        "ndcg": 0.6309297535714575,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "refund-current",
+          "refund-superseded"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How many days after delivery can a customer request a refund?",
+        "relevant_ids": [
+          "refund-current"
+        ],
+        "required_context_ids": [
+          "refund-current",
+          "refund-superseded"
+        ],
+        "hard_negative_ids": [
+          "refund-hard-negative"
+        ]
+      },
+      {
+        "id": "expense-deadline",
+        "retrieved_ids": [
+          "expenses"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": false,
+        "cited_ids": [
+          "expenses"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "When are expense claims due?",
+        "relevant_ids": [
+          "expenses"
+        ],
+        "required_context_ids": [
+          "expenses"
+        ],
+        "hard_negative_ids": []
+      },
+      {
+        "id": "sev1-escalation",
+        "retrieved_ids": [
+          "incident-handbook",
+          "oncall-rota",
+          "expenses"
+        ],
+        "hit": true,
+        "reciprocal_rank": 1.0,
+        "recall": 1.0,
+        "ndcg": 1.0,
+        "missing_relevant_ids": [],
+        "missing_context_ids": [],
+        "hard_negative_first": false,
+        "has_hard_negatives": true,
+        "cited_ids": [
+          "incident-handbook"
+        ],
+        "citations_not_retrieved": [],
+        "citations_not_relevant": [],
+        "passed": true,
+        "query": "How quickly must a severity-one incident be escalated?",
+        "relevant_ids": [
+          "incident-handbook"
+        ],
+        "required_context_ids": [
+          "incident-handbook"
+        ],
+        "hard_negative_ids": [
+          "oncall-rota"
+        ]
+      }
+    ]
+  },
+  "baseline": "baseline-bm25",
+  "candidate": "candidate-bm25-b05",
+  "dataset": {
+    "name": "policies",
+    "documents": 11,
+    "cases": 6
+  },
+  "k": 3,
+  "max_drop": 0.02,
+  "bootstrap": null,
+  "metrics": [
+    {
+      "metric": "hit_at_k",
+      "baseline": 1.0,
+      "candidate": 1.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "mrr_at_k",
+      "baseline": 0.9167,
+      "candidate": 0.9167,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "recall_at_k",
+      "baseline": 1.0,
+      "candidate": 1.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "ndcg_at_k",
+      "baseline": 0.9385,
+      "candidate": 0.9385,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "context_coverage_at_k",
+      "baseline": 1.0,
+      "candidate": 1.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "citation_precision",
+      "baseline": 1.0,
+      "candidate": 1.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "answers_fully_supported_rate",
+      "baseline": 1.0,
+      "candidate": 1.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    },
+    {
+      "metric": "hard_negative_top1_rate",
+      "baseline": 0.0,
+      "candidate": 0.0,
+      "delta": 0.0,
+      "ci_low": null,
+      "ci_high": null,
+      "verdict": "ok",
+      "failed": false
+    }
+  ],
+  "performance": {
+    "baseline": {
+      "index_build_s": 0.0,
+      "query_p50_ms": 0.01,
+      "query_p95_ms": 0.01,
+      "peak_rss_mb": 27.0,
+      "model_params": null,
+      "model_mb": null,
+      "device": "cpu"
+    },
+    "candidate": {
+      "index_build_s": 0.0,
+      "query_p50_ms": 0.0,
+      "query_p95_ms": 0.01,
+      "peak_rss_mb": 27.0,
+      "model_params": null,
+      "model_mb": null,
+      "device": "cpu"
+    }
+  },
+  "hardware": {
+    "cpu": "Apple M4",
+    "cpu_count": 10,
+    "os": "Darwin 27.0.0",
+    "python": "3.14.7"
+  },
+  "regressions": [],
+  "newly_failing_cases": [],
+  "passed": true,
+  "reproduce": "rag-gate gate --dataset fixtures/policies.json --k 3 --baseline configs/baseline.json --candidate configs/candidate-bm25-b05.json --no-bootstrap --output reports/unchanged.json --html reports/unchanged-report.html"
+}

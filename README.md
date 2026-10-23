@@ -5,6 +5,19 @@
 
 A regression gate for the retrieval half of a RAG system: it scores a baseline and a candidate retrieval configuration on the same labelled questions and exits non-zero when the candidate is significantly worse.
 
+[Explore the product demo](https://matthewpaver.github.io/demos/rag-gate/): follow an internal-help question as an outdated proposal overtakes the current policy. Inspect all six questions, switch between two real saved CLI comparisons, and download the evidence. This is a viewer for recorded retrieval results, not a live assistant or a test of generated-answer correctness.
+
+The public examples use the six-question synthetic fixture with `--no-bootstrap`; they are smoke tests. The unchanged example means no detected regression, not proof of a good result or a safe release.
+
+To regenerate the website and its offline reports after an editable installation:
+
+```bash
+python scripts/build_demo.py
+python -m http.server 4334 --directory web
+```
+
+To export the same assets into a static host, pass `--output /path/to/site/demos/rag-gate`. The builder runs the real CLI, requires the expected fail/pass exit codes, and copies its exact JSON and portable reports. It needs no model download, web framework or service. The browser makes only local asset requests; no documents are uploaded.
+
 ## Result: it blocks the bad change and lets the good ones through
 
 BEIR SciFact (5,183 abstracts, 300 test queries), k=10. Each candidate is compared with BM25. Δ is candidate − baseline; the interval is a 95% paired bootstrap over queries (10,000 resamples, seed 0). The gate fails a metric only when the drop exceeds `--max-drop 0.02` **and** the interval excludes zero. Cost columns are recorded, not gated.
