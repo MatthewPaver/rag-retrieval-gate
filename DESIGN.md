@@ -106,7 +106,7 @@ Keyboard focus uses a visible green outline (3px with 5px offset). Previous/next
 
 ### Source rankings and result strip
 
-Each ranking is a semantic ordered list. Current, superseded and context labels accompany readable titles and excerpts. Wide-screen connectors show the opening rank swap. The result strip combines an icon, a short verdict and a concrete consequence; it reflows into a stacked explanation on phones.
+Each ranking is a semantic ordered list. Current, superseded and context labels accompany readable titles and excerpts. Wide-screen connectors show the opening rank swap. The result strip precedes the paired rankings and combines an icon, a short verdict and a concrete consequence; it reflows into a stacked explanation on phones. Question views distinguish the selected question’s source order from the overall hold, explicitly naming worse data-retention evidence as its cause. The summary reports “N of total question checks pass” separately from the overall source-order result. The masthead retains RAG Regression Gate with the subordinate descriptor “Search checks for staff assistants”. “Set up your own checks” leads to the engineer handoff, while exact source text and technical results remain in native disclosures.
 
 The unchanged-result switch may briefly move candidate rows into place (8px over 280ms). This feedback is optional, uses the browser animation API, and is skipped when reduced motion is requested. Reduced motion also removes smooth scrolling. The report needs no animation.
 
