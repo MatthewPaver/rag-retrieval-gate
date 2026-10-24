@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rag-retrieval-gate"
 version = "0.1.0"
-description = "Regression gate for RAG retrieval: hit@k, MRR and citation checks, baseline vs candidate, non-zero exit on regression."
+description = "RAG Regression Gate: compare source retrieval before and after a search change, with reproducible evidence and release checks."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "Matthew Paver" }]
