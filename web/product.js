@@ -69,7 +69,7 @@ function render() {
   const before = report.baseline_report.cases[selected];
   const after = report.candidate_report.cases[selected];
   byId('question').textContent = before.query;
-  byId('position').textContent = `${selected + 1} of ${report.baseline_report.cases.length}`;
+  byId('position').textContent = `Question ${selected + 1} of ${report.baseline_report.cases.length}`;
   byId('position').setAttribute('aria-label', `Question ${selected + 1} of ${report.baseline_report.cases.length}`);
   byId('question-select').value = String(selected);
   byId('previous').disabled = selected === 0;
@@ -100,6 +100,7 @@ function render() {
   const stem = report.passed ? 'unchanged' : 'comparison';
   byId('download').href = `${stem}.json`;
   byId('full-report').href = report.passed ? 'unchanged-report.html' : 'report.html';
+  byId('read-report').href = byId('full-report').href;
   byId('reproduce').textContent = report.reproduce;
   byId('run-name').textContent = report.candidate_report.config.name;
   const metricRows = report.metrics.filter((metric) => ['mrr_at_k', 'ndcg_at_k'].includes(metric.metric));
