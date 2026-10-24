@@ -24,7 +24,9 @@ const text = (tag, content, className) => {
   return element;
 };
 function sourceState(id, entry) {
-  if (id.endsWith('-superseded')) return ['Superseded', 'superseded'];
+  if (id === 'retention-superseded') return ['Unapproved proposal', 'superseded'];
+  if (id === 'refund-superseded') return ['Ended pilot', 'superseded'];
+  if (id.endsWith('-superseded')) return ['Outdated source', 'superseded'];
   if (entry.relevant_ids.includes(id)) return [id.endsWith('-current') ? 'Current' : 'Relevant source', 'current'];
   if (entry.required_context_ids.includes(id)) return ['Required context', 'context'];
   return ['Other source', 'other'];
