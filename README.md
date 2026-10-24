@@ -12,6 +12,8 @@ Search checks for staff assistants: compare which sources an assistant finds bef
 
 This website shows two saved CLI comparisons; it does not run an assistant or accept uploads. The six-question synthetic examples use `--no-bootstrap` and are smoke tests. No detected regression does not prove a good result or correct generated answers.
 
+**Case study:** [The problem, review journey and before-and-after design](https://matthewpaver.github.io/work/rag-regression-gate/).
+
 **Technical evidence:** [How the checks work](#how-it-works) · [Results](#results) · [Run locally](#quickstart) · [Use in CI](#the-gate-in-ci) · [Limits](#limits)
 
 RAG Regression Gate is the product name; `rag-retrieval-gate` is the package and repository, and `rag-gate` is its command.
