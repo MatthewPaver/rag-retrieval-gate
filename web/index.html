@@ -51,6 +51,6 @@ rag-gate gate --dataset fixtures/policies.json --k 3 \
   --no-bootstrap --output reports/comparison.json \
   --html reports/report.html</code></pre><p>The deliberate regression returns exit 1. Replace the fixture with your labelled questions and documents, and choose the configs before testing. Do not tune on the test questions.</p><p>For a representative evaluation, remove <code>--no-bootstrap</code>. The default gate requires both a drop over 0.02 and a paired 95% bootstrap interval excluding zero. Invalid or incomparable input gives no verdict and exit 2.</p><p>Core retrieval uses Python’s standard library. Optional dense models require separate installation and explicit permission to download.</p></div></details></section>
 </main>
-<footer class="shell footer"><span>Built by <a href="https://matthewpaver.github.io/">Matthew Paver</a></span><a href="https://github.com/MatthewPaver/rag-retrieval-gate">Source and reproducible tests</a></footer>
+<footer class="shell footer"><span>Built by <a href="https://matthewpaver.github.io/">Matthew Paver</a></span><a href="https://github.com/MatthewPaver/rag-retrieval-gate#results">Technical evidence and reproducible tests</a></footer>
 </body>
 </html>

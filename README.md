@@ -1,55 +1,23 @@
-# rag-retrieval-gate: block retrieval regressions in CI
+# RAG Regression Gate
+
+Search checks for staff assistants: compare which sources an assistant finds before and after an update.
+
+**For:** engineers maintaining document search, with reviewable evidence for the people who own the information. “Retrieval” means finding source documents; the gate checks this step before an assistant generates an answer.
+
+**Start here:** [Try RAG Regression Gate](https://matthewpaver.github.io/demos/rag-gate/) — no install or account.
+
+1. Inspect the held update: an unapproved old proposal overtakes the current policy in search results.
+2. Compare the source rankings, inspect the exact documents and review all six questions.
+3. Switch to the saved unchanged comparison and download either original report. An engineer runs the gate on your own questions.
+
+This website shows two saved CLI comparisons; it does not run an assistant or accept uploads. The six-question synthetic examples use `--no-bootstrap` and are smoke tests. No detected regression does not prove a good result or correct generated answers.
+
+**Technical evidence:** [How the checks work](#how-it-works) · [Results](#results) · [Run locally](#quickstart) · [Use in CI](#the-gate-in-ci) · [Limits](#limits)
+
+RAG Regression Gate is the product name; `rag-retrieval-gate` is the package and repository, and `rag-gate` is its command.
 
 [![CI](https://github.com/MatthewPaver/rag-retrieval-gate/actions/workflows/ci.yml/badge.svg)](https://github.com/MatthewPaver/rag-retrieval-gate/actions/workflows/ci.yml)
 [![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE)
-
-A regression gate for the retrieval half of a RAG system: it scores a baseline and a candidate retrieval configuration on the same labelled questions and exits non-zero when the candidate is significantly worse.
-
-[Explore the product demo](https://matthewpaver.github.io/demos/rag-gate/): follow an internal-help question as an outdated proposal overtakes the current policy. Inspect all six questions, switch between two real saved CLI comparisons, and download the evidence. This is a viewer for recorded retrieval results, not a live assistant or a test of generated-answer correctness.
-
-The public examples use the six-question synthetic fixture with `--no-bootstrap`; they are smoke tests. The unchanged example means no detected regression, not proof of a good result or a safe release.
-
-To regenerate the website and its offline reports after an editable installation:
-
-```bash
-python scripts/build_demo.py
-python -m http.server 4334 --directory web
-```
-
-To export the same assets into a static host, pass `--output /path/to/site/demos/rag-gate`. The builder runs the real CLI, requires the expected fail/pass exit codes, and copies its exact JSON and portable reports. It needs no model download, web framework or service. The browser makes only local asset requests; no documents are uploaded.
-
-## Result: it blocks the bad change and lets the good ones through
-
-BEIR SciFact (5,183 abstracts, 300 test queries), k=10. Each candidate is compared with BM25. Δ is candidate − baseline; the interval is a 95% paired bootstrap over queries (10,000 resamples, seed 0). The gate fails a metric only when the drop exceeds `--max-drop 0.02` **and** the interval excludes zero. Cost columns are recorded, not gated.
-
-| Configuration | hit@10 | MRR@10 (Δ, 95% CI) | nDCG@10 (Δ, 95% CI) | Gate | Build s | p50 / p95 ms per query | Peak RSS MB | Model MB |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `baseline-bm25` | 0.8100 | 0.6321 | 0.6646 | baseline | 1.0 | 2.2 / 7.8 | 90 | - |
-| `candidate-chunk-12` | 0.7300 | 0.5316 (−0.1005, [−0.1354, −0.0661]) | 0.5675 (−0.0971, [−0.1283, −0.0671]) | FAIL: hit_at_k, mrr_at_k, recall_at_k, ndcg_at_k, context_coverage_at_k | 1.1 | 6.5 / 20.7 | 170 | - |
-| `candidate-minilm-l6` | 0.7933 | 0.6047 (−0.0274, [−0.0689, +0.0151]) | 0.6451 (−0.0195, [−0.0578, +0.0201]) | PASS | 83.8 | 8.9 / 13.7 | 684 | 91 |
-| `candidate-hybrid-minilm` | 0.8267 | 0.6536 (+0.0215, [−0.0041, +0.0466]) | 0.6875 (+0.0229, [+0.0019, +0.0437]) | PASS (significantly better: ndcg_at_k) | 88.3 | 11.6 / 20.5 | 736 | 91 |
-| `candidate-bm25-rerank-minilm` | 0.8167 | 0.6527 (+0.0206, [−0.0136, +0.0562]) | 0.6809 (+0.0163, [−0.0137, +0.0473]) | PASS | 5.8 | 1965.9 / 3923.8 | 954 | 91 |
-
-Produced by:
-
-```bash
-python scripts/results_table.py --dataset data/beir/scifact --k 10 configs/baseline.json \
-  configs/candidate-chunk-12.json configs/candidate-minilm.json \
-  configs/candidate-hybrid-minilm.json configs/candidate-bm25-rerank.json
-```
-
-Each configuration runs in its own `rag-gate run` process, so peak RSS is that configuration's own (it includes the Python interpreter and, for model configs, PyTorch). Build time includes loading models from the local cache and embedding the corpus. Hardware: Apple M1 Pro, 8 cores, macOS (Darwin 27.0.0), Python 3.13.11, CPU only (`--device cpu`, the default).
-
-What the table says:
-
-- **12-word chunking is blocked.** It fails on five metrics, and every one of those intervals excludes zero. This is a real regression, not noise.
-- **Hybrid BM25 + MiniLM passes and is the only significant improvement:** nDCG@10 +0.0229, interval [+0.0019, +0.0437]. Its MRR gain (+0.0215) is not significant at 300 queries. It costs a dense index (about 88 s to build on this CPU) and roughly 5× BM25's median query latency.
-- **The cross-encoder re-ranker passes but does not earn its cost here.** Re-scoring BM25's top 100 with `cross-encoder/ms-marco-MiniLM-L-6-v2` raises MRR@10 by 0.0206 and nDCG@10 by 0.0163, but neither interval excludes zero ([−0.0136, +0.0562] and [−0.0137, +0.0473]). On this CPU it takes a median of 1,966 ms per query against BM25's 2.2 ms. On a GPU, or re-ranking fewer documents, the trade would look different; this table does not show that.
-- **MiniLM on its own passes, and that needs reading carefully.** Under the old threshold-only rule its MRR drop of 0.0274 failed the gate. With 300 queries that drop is inside the noise (interval [−0.0689, +0.0151]), so the gate no longer blocks it. Passing means "not shown to be worse", not "better": the point estimates are all negative.
-
-No parameter was tuned on the test queries. RRF uses k=60 from Cormack, Clarke and Büttcher (2009) and fuses each retriever's top 100; the re-ranker re-scores BM25's top 100, as in the BEIR paper. All of these are config defaults fixed before the first SciFact run.
-
-To try it on the committed fixture (Python 3.11+): `pip install -e .`, then `rag-gate gate --dataset fixtures/policies.json --k 3 --baseline configs/baseline.json --candidate configs/candidate-chunk-12.json`. The full [Quickstart](#quickstart) is below.
 
 ## The problem
 
@@ -213,6 +181,41 @@ Keep the baseline config pinned to what is in production; the pull request edits
 
 The loader rejects duplicate IDs, blank text, unknown document IDs, cases without relevant documents, hard negatives that overlap the evidence, and answers that cite nothing or cite documents not in the corpus. Any of these exits `2` with a message saying what is wrong and where.
 
+<a id="result-it-blocks-the-bad-change-and-lets-the-good-ones-through"></a>
+
+## Results
+
+BEIR SciFact (5,183 abstracts, 300 test queries), k=10. Each candidate is compared with BM25. Δ is candidate − baseline; the interval is a 95% paired bootstrap over queries (10,000 resamples, seed 0). The gate fails a metric only when the drop exceeds `--max-drop 0.02` **and** the interval excludes zero. Cost columns are recorded, not gated.
+
+| Configuration | hit@10 | MRR@10 (Δ, 95% CI) | nDCG@10 (Δ, 95% CI) | Gate | Build s | p50 / p95 ms per query | Peak RSS MB | Model MB |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `baseline-bm25` | 0.8100 | 0.6321 | 0.6646 | baseline | 1.0 | 2.2 / 7.8 | 90 | - |
+| `candidate-chunk-12` | 0.7300 | 0.5316 (−0.1005, [−0.1354, −0.0661]) | 0.5675 (−0.0971, [−0.1283, −0.0671]) | FAIL: hit_at_k, mrr_at_k, recall_at_k, ndcg_at_k, context_coverage_at_k | 1.1 | 6.5 / 20.7 | 170 | - |
+| `candidate-minilm-l6` | 0.7933 | 0.6047 (−0.0274, [−0.0689, +0.0151]) | 0.6451 (−0.0195, [−0.0578, +0.0201]) | PASS | 83.8 | 8.9 / 13.7 | 684 | 91 |
+| `candidate-hybrid-minilm` | 0.8267 | 0.6536 (+0.0215, [−0.0041, +0.0466]) | 0.6875 (+0.0229, [+0.0019, +0.0437]) | PASS (significantly better: ndcg_at_k) | 88.3 | 11.6 / 20.5 | 736 | 91 |
+| `candidate-bm25-rerank-minilm` | 0.8167 | 0.6527 (+0.0206, [−0.0136, +0.0562]) | 0.6809 (+0.0163, [−0.0137, +0.0473]) | PASS | 5.8 | 1965.9 / 3923.8 | 954 | 91 |
+
+Produced by:
+
+```bash
+python scripts/results_table.py --dataset data/beir/scifact --k 10 configs/baseline.json \
+  configs/candidate-chunk-12.json configs/candidate-minilm.json \
+  configs/candidate-hybrid-minilm.json configs/candidate-bm25-rerank.json
+```
+
+Each configuration runs in its own `rag-gate run` process, so peak RSS is that configuration's own (it includes the Python interpreter and, for model configs, PyTorch). Build time includes loading models from the local cache and embedding the corpus. Hardware: Apple M1 Pro, 8 cores, macOS (Darwin 27.0.0), Python 3.13.11, CPU only (`--device cpu`, the default).
+
+What the table says:
+
+- **12-word chunking is blocked.** It fails on five metrics, and every one of those intervals excludes zero. This is a real regression, not noise.
+- **Hybrid BM25 + MiniLM passes and is the only significant improvement:** nDCG@10 +0.0229, interval [+0.0019, +0.0437]. Its MRR gain (+0.0215) is not significant at 300 queries. It costs a dense index (about 88 s to build on this CPU) and roughly 5× BM25's median query latency.
+- **The cross-encoder re-ranker passes but does not earn its cost here.** Re-scoring BM25's top 100 with `cross-encoder/ms-marco-MiniLM-L-6-v2` raises MRR@10 by 0.0206 and nDCG@10 by 0.0163, but neither interval excludes zero ([−0.0136, +0.0562] and [−0.0137, +0.0473]). On this CPU it takes a median of 1,966 ms per query against BM25's 2.2 ms. On a GPU, or re-ranking fewer documents, the trade would look different; this table does not show that.
+- **MiniLM on its own passes, and that needs reading carefully.** Under the old threshold-only rule its MRR drop of 0.0274 failed the gate. With 300 queries that drop is inside the noise (interval [−0.0689, +0.0151]), so the gate no longer blocks it. Passing means "not shown to be worse", not "better": the point estimates are all negative.
+
+No parameter was tuned on the test queries. RRF uses k=60 from Cormack, Clarke and Büttcher (2009) and fuses each retriever's top 100; the re-ranker re-scores BM25's top 100, as in the BEIR paper. All of these are config defaults fixed before the first SciFact run.
+
+To try it on the committed fixture (Python 3.11+): `pip install -e .`, then `rag-gate gate --dataset fixtures/policies.json --k 3 --baseline configs/baseline.json --candidate configs/candidate-chunk-12.json`. The full [Quickstart](#quickstart) is below.
+
 ## Design decisions and trade-offs
 
 - **Documents, not chunks, are the unit of truth.** Labels are written against stable document IDs so that a chunking change can be compared with the previous chunking. The cost: the gate cannot tell you which chunk carried the answer.
@@ -240,6 +243,17 @@ The loader rejects duplicate IDs, blank text, unknown document IDs, cases withou
 ## Licence
 
 MIT. See [LICENSE](LICENSE).
+
+## Rebuild the browser demo
+
+To regenerate the website and its offline reports after an editable installation:
+
+```bash
+python scripts/build_demo.py
+python -m http.server 4334 --directory web
+```
+
+To export the same assets into a static host, pass `--output /path/to/site/demos/rag-gate`. The builder runs the real CLI, requires the expected fail/pass exit codes, and copies its exact JSON and portable reports. It needs no model download, web framework or service. The browser makes only local asset requests; no documents are uploaded.
 
 ## Portable review report
 
