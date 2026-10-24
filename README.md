@@ -2,7 +2,7 @@
 
 Search checks for staff assistants: compare which sources an assistant finds before and after an update.
 
-**For:** engineers maintaining document search, with reviewable evidence for the people who own the information. “Retrieval” means finding source documents; the gate checks this step before an assistant generates an answer.
+**For:** engineers maintaining document search, with reviewable evidence for the people who own the information. RAG means retrieval-augmented generation: an assistant finds source documents before writing an answer. The gate checks that search step.
 
 **Start here:** [Try RAG Regression Gate](https://matthewpaver.github.io/demos/rag-gate/) — no install or account.
 
