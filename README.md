@@ -4,13 +4,13 @@ Search checks for staff assistants: compare which sources an assistant finds bef
 
 **For:** engineers maintaining document search, with reviewable evidence for the people who own the information. RAG means retrieval-augmented generation: an assistant finds source documents before writing an answer. The gate checks that search step.
 
-**Start here:** [Try RAG Regression Gate](https://matthewpaver.github.io/demos/rag-gate/) — no install or account.
+**Start here:** [Try RAG Regression Gate](https://matthewpaver.github.io/demos/rag-gate/). No install or account needed.
 
 1. Inspect the held update: an unapproved old proposal overtakes the current policy in search results.
 2. Compare the source rankings, inspect the exact documents and review all six questions.
 3. Switch to the saved unchanged comparison and download either original report. An engineer runs the gate on your own questions.
 
-This website shows two saved CLI comparisons; it does not run an assistant or accept uploads. The six-question synthetic examples use `--no-bootstrap` and are smoke tests. No detected regression does not prove a good result or correct generated answers.
+This website shows two saved CLI comparisons; it does not run an assistant or accept uploads. The six-question synthetic examples use `--no-bootstrap` and are smoke tests. A pass means nothing got measurably worse. It does not prove the results are good or that generated answers are correct.
 
 **Case study:** [The problem, review journey and before-and-after design](https://matthewpaver.github.io/work/rag-regression-gate/).
 
